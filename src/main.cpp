@@ -139,6 +139,10 @@ bool shift_key = false;
 bool control_key = false;
 bool key_A = false, key_D = false, key_W = false, key_S = false;
 bool key_attack = false;
+bool hit_attack = false;
+float hit_time = float(glfwGetTime());
+float hit_vec = 0;
+float hit_vec2 = 0;
 
 float knock_back_scale = 2.0f;
 
@@ -174,6 +178,7 @@ void update_sound() {
 
 void update()
 {
+	
 	if (!pause) t += delta_frame;
 	// update projection matrix
 	cam.aspect = window_size.x/float(window_size.y);
@@ -190,7 +195,6 @@ void update()
 
 	//Text
 	a = abs(sin(float(glfwGetTime()) * 2.5f));
-
 	//box.update(t);
 	character.update(t, delta_frame);
 	zombie.update(t, delta_frame, character.pos);
@@ -206,6 +210,10 @@ void update()
 			vec3 pos = character.getAttackingPos();
 			vec3 pos2 = zombie.getPos();
 			if ((zombie.getPos() - pos).length() < 2.0f) {
+				hit_attack = true;
+				hit_time = float(glfwGetTime());
+				hit_vec = float(0.06 * cos(atan2((cam.at - zombie.getPos()).y, (cam.at - zombie.getPos()).x)));
+				hit_vec2 = float(0.05 * sin(atan2((cam.at - zombie.getPos()).y, (cam.at - zombie.getPos()).x)));
 				engine->removeAllSoundSources();
 				sound = engine->play3D(hit_sound_path, sound_pos, false, false, false);
 				update_sound();
@@ -213,6 +221,10 @@ void update()
 			}
 		}
 	}
+	float hit_t = float(glfwGetTime());
+	if (hit_t - hit_time >= 0.5f)
+		hit_attack = false;
+
 	cam.at = character.getPos();
 	cam.eye = vec3(campos.x, campos.y, campos.z) + character.getPos();
 	cam.view_matrix = mat4::look_at(cam.eye, cam.at, cam.up);
@@ -260,6 +272,10 @@ void render()
 		skybox.render(program, 2);
 
 		float dpi_scale = cg_get_dpi_scale();
+		if (hit_attack) {
+			render_text_3d("Hit!", int(window_size.x * (0.47f + hit_vec + 0.02f*(character.getPos()-zombie.getPos()).x)), int(window_size.y * (0.3500f - hit_vec2 - 0.01f* (character.getPos() - zombie.getPos()).y)), 1.0f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		}
+
 		render_text_3d("Life", int(window_size.x * 0.8), int(window_size.y*0.9), 1.0f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
 
 		if (pause) {
