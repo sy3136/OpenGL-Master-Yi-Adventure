@@ -140,6 +140,8 @@ bool control_key = false;
 bool key_A = false, key_D = false, key_W = false, key_S = false;
 bool key_attack = false;
 
+float knock_back_scale = 2.0f;
+
 Box box;
 Box skybox;
 Character character;
@@ -203,13 +205,11 @@ void update()
 			character_attack = false;
 			vec3 pos = character.getAttackingPos();
 			vec3 pos2 = zombie.getPos();
-			printf("%f %f %f\n", pos.x, pos.y, pos.z);
-			printf("%f %f %f\n", pos2.x, pos2.y, pos2.z);
 			if ((zombie.getPos() - pos).length() < 2.0f) {
 				engine->removeAllSoundSources();
 				sound = engine->play3D(hit_sound_path, sound_pos, false, false, false);
 				update_sound();
-				zombie.knockback((zombie.getPos() - character.getPos()).normalize(), 5.0f);
+				zombie.knockback((zombie.getPos() - character.getPos()).normalize(), knock_back_scale);
 			}
 		}
 	}
@@ -350,12 +350,15 @@ void mouse( GLFWwindow* window, int button, int action, int mods )
 	if(button==GLFW_MOUSE_BUTTON_LEFT)
 	{
 		dvec2 pos; glfwGetCursorPos(window,&pos.x,&pos.y);
-		printf("> Left mouse button pressed at (%d, %d)\n", int(pos.x), int(pos.y));
+		//printf("> Left mouse button pressed at (%d, %d)\n", int(pos.x), int(pos.y));
 		vec2 npos = cursor_to_ndc( pos, window_size );
 		if (action == GLFW_PRESS)			{
 			if (scene == 1) {
 				tb.begin(cam.view_matrix, npos, cam.at);
-				key_attack = true;
+				if (!key_attack) {
+					key_attack = true;
+					if (!character.isAttacking(t)) knock_back_scale = 2.0f;
+				}
 				if (control_key)
 					updatePanning = true;
 				else if (shift_key)
@@ -375,7 +378,14 @@ void mouse( GLFWwindow* window, int button, int action, int mods )
 	{
 		dvec2 pos; glfwGetCursorPos(window, &pos.x, &pos.y);
 		vec2 npos = cursor_to_ndc(pos, window_size);
-		if (action == GLFW_PRESS) { tb.begin(cam.view_matrix, npos, cam.at);	updateZooming = true; }
+		if (action == GLFW_PRESS) { 
+			tb.begin(cam.view_matrix, npos, cam.at);
+			updateZooming = true;
+			if (!key_attack) {
+				key_attack = true;
+				if (!character.isAttacking(t)) knock_back_scale = 5.0f;
+			}
+		}
 		else if (action == GLFW_RELEASE) {
 			tb.end();
 			updateZooming = false;
@@ -435,7 +445,7 @@ bool user_init()
 
 	
 	// time init
-	t = float(glfwGetTime());
+	check_frame = t = float(glfwGetTime());
 
 	// Sound
 	// create the engine

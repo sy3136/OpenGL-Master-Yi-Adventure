@@ -28,6 +28,7 @@ public:
 	}
 
 	bool attacking = false;
+	bool knockbacking = false;
 
 	void start_attack(float t) {
 		arm1.start_rotate(t);
@@ -37,42 +38,45 @@ public:
 	void knockback(vec3 force, float scale) {
 		speed.x = force.x * scale;
 		speed.y = force.y * scale;
-		printf("%f %f\n", speed.x, speed.y);
+		knockbacking = true;
+		x_moving = y_moving = false;
 	}
 
-	vec3 playerPos;
 	void update(float t, float delta_frame, vec3 playerPos) {
-		if ((playerPos - pos).length() > 2.0f) {
-			float theta = atan2(playerPos.y - pos.y, playerPos.x - pos.x);
-			if (speed.length() < 1.0f) {
-				speed.x += cos(theta) * delta_frame * accel_scale;
-				speed.y += sin(theta) * delta_frame * accel_scale;
+		if (!knockbacking) {
+			if ((playerPos - pos).length() > 2.0f) {
+				float theta = atan2(playerPos.y - pos.y, playerPos.x - pos.x);
+				if (speed.length() < 1.0f) {
+					speed.x += cos(theta) * delta_frame * accel_scale;
+					speed.y += sin(theta) * delta_frame * accel_scale;
+				}
+				else {
+					speed.x += cos(theta) * delta_frame * accel_scale * 2.0f;
+					speed.y += sin(theta) * delta_frame * accel_scale * 2.0f;
+					speed = speed.normalize();
+				}
+				x_moving = y_moving = true;
+				attacking = false;
+				arm1.end_rotate();
+				arm2.end_rotate();
 			}
 			else {
-				speed.x += cos(theta) * delta_frame * accel_scale * 2.0f;
-				speed.y += sin(theta) * delta_frame * accel_scale * 2.0f;
-				speed = speed.normalize();
+				x_moving = y_moving = false;
+				attacking = true;
+				start_attack(t);
 			}
-			x_moving = y_moving = true;
-			attacking = false;
-			arm1.end_rotate();
-			arm2.end_rotate();
-		} else {
-			x_moving = y_moving = false;
-			attacking = true;
-			start_attack(t);
 		}
 
 		pos.x += speed.x * delta_frame * speed_scale;
 		pos.y += speed.y * delta_frame * speed_scale;
 		if (!x_moving && speed.x) {
 			float origin_x = speed.x;
-			speed.x = speed.x + ((speed.x > 0) ? -accel_scale : accel_scale) * delta_frame * speed_scale;
+			speed.x = speed.x + ((speed.x > 0) ? -accel_scale : accel_scale) * delta_frame * speed_scale * (abs(speed.x) / (abs(speed.x) + abs(speed.y)));
 			if ((origin_x > 0) != (speed.x > 0)) speed.x = 0;
 		}
 		if (!y_moving && speed.y) {
 			float origin_y = speed.y;
-			speed.y = speed.y + ((speed.y > 0) ? -accel_scale : accel_scale) * delta_frame * speed_scale;
+			speed.y = speed.y + ((speed.y > 0) ? -accel_scale : accel_scale) * delta_frame * speed_scale * (abs(speed.y) / (abs(speed.x) + abs(speed.y)));
 			if ((origin_y > 0) != (speed.y > 0)) speed.y = 0;
 		}
 		if (speed.x || speed.y) {
@@ -81,6 +85,7 @@ public:
 			leg2.start_rotate(t);
 		}
 		else {
+			knockbacking = false;
 			leg1.end_rotate();
 			leg2.end_rotate();
 		}
