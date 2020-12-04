@@ -7,7 +7,7 @@ class Box
 public:
 	Box() {}
 	Box(const char* texture_path, float w, float h, float z, float scale, vec3 pos,
-		float rotating_dir, float thetaxz = 0.0f, float rotating_speed = 8.0f, vec3 weapon_pos_factor = vec3(0, 0, 0), float rotating_range = PI/4.0f) {
+		float rotating_dir=0.0f, float thetaxz = 0.0f, float rotating_speed = 8.0f, vec3 weapon_pos_factor = vec3(0, 0, 0), float rotating_range = PI/4.0f) {
 		loadTexture(texture_path, texture);
 		this->w = w*scale;
 		this->h = h*scale;

@@ -13,12 +13,12 @@ public:
 	Zombie() {}
 
 	Zombie(vec3 pos, float scale) {
-		arm1 = Box(zombie_texture[1], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.75f, 1.5f), 1.0f, PI/2, 15.0f);
-		arm2 = Box(zombie_texture[1], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.75f, 1.5f), 1.0f, PI/2, 15.0f);
-		body = Box(zombie_texture[1], 1.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 1.5f), 0.0f);
-		leg1 = Box(zombie_texture[1], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.25f, 0.5f), -1.0f);
-		leg2 = Box(zombie_texture[1], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.25f, 0.5f), 1.0f);
-		head = Box(zombie_texture[0], 2.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 2.25f), 0.0f);
+		arm1 = Box(zombie_texture[1], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.75f, 1.5f + 0.5f), 1.0f, PI/2, 15.0f);
+		arm2 = Box(zombie_texture[1], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.75f, 1.5f + 0.5f), 1.0f, PI/2, 15.0f);
+		body = Box(zombie_texture[1], 1.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 1.5f + 0.5f), 0.0f);
+		leg1 = Box(zombie_texture[1], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.25f, 0.5f + 0.5f), -1.0f);
+		leg2 = Box(zombie_texture[1], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.25f, 0.5f + 0.5f), 1.0f);
+		head = Box(zombie_texture[0], 2.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 2.25f + 0.5f), 0.0f);
 		this->pos = pos;
 		this->scale = scale;
 		this->speed_scale = 3.0f;
@@ -44,7 +44,7 @@ public:
 
 	void update(float t, float delta_frame, vec3 playerPos) {
 		if (!knockbacking) {
-			if ((playerPos - pos).length() > 2.0f) {
+			if ((playerPos - pos).length() > 1.5f) {
 				float theta = atan2(playerPos.y - pos.y, playerPos.x - pos.x);
 				if (speed.length() < 1.0f) {
 					speed.x += cos(theta) * delta_frame * accel_scale;

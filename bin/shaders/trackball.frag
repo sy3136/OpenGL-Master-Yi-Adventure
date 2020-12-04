@@ -106,7 +106,7 @@ void main()
 	if(alphablending == 1)
 	{
 		vec4 at = texture( ALPHATEX, tc);
-		fragColor.a = at.r;
+		if(at.r <= 0.2 && at.g <= 0.2 && at.b <= 0.2) discard;
 	}
 
 	if (is_text == 1) {

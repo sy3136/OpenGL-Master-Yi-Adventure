@@ -8,6 +8,7 @@
 #include "Weapon.h"
 #include "Character.h"
 #include "Zombie.h"
+#include "Grass.h"
 
 #include "irrKlang\irrKlang.h" // Sound
 #pragma comment(lib, "irrKlang.lib")
@@ -35,7 +36,7 @@ static const char* hit_sound_path = "../bin/sounds/punch.wav"; // Sound
 
 
 static const char*	texture_paths[19] = {
-	"../bin/textures/box.bmp", "../bin/textures/skybox/Daylight Box UV.jpg", "../bin/textures/skybox/1.jpg"
+	"../bin/textures/ground.bmp", "../bin/textures/skybox/Daylight Box UV.jpg", "../bin/textures/skybox/1.jpg"
 };
 //*************************************
 // common structures
@@ -129,6 +130,7 @@ float delta_frame = 0.0f;
 
 GLuint  box_vertex_array = 0;
 GLuint  skybox_vertex_array = 0;
+GLuint	grass_vertex_array = 0;
 int		box_poligon_num = 12;
 
 bool updateRotating = false;
@@ -146,8 +148,9 @@ float hit_vec2 = 0;
 
 float knock_back_scale = 2.0f;
 
-Box box;
+Box ground;
 Box skybox;
+std::vector<Grass> grass;
 Character character;
 bool character_attack = false;
 Zombie zombie;
@@ -195,10 +198,12 @@ void update()
 
 	//Text
 	a = abs(sin(float(glfwGetTime()) * 2.5f));
-	//box.update(t);
+	ground.update(t, vec3(0, 0, 0), 0);
+	for (auto& g : grass) g.update(t);
+	skybox.update(t, vec3(0, 0, 0), 0);
+
 	character.update(t, delta_frame);
 	zombie.update(t, delta_frame, character.pos);
-	skybox.update(t, vec3(0, 0, 0), 0);
 	if (key_attack) {
 		character.attack(t);
 		character_attack = true;
@@ -263,8 +268,11 @@ void render()
 		glDepthFunc(GL_LESS);
 		// notify GL that we use our own program
 		glUseProgram(program);
+		glBindVertexArray(grass_vertex_array);
+		for (auto& g : grass) g.render(program, 2);
+
 		glBindVertexArray(box_vertex_array);
-		//box.render(program);
+		ground.render(program, 2);
 		character.render(program);
 		zombie.render(program);
 
@@ -493,9 +501,15 @@ bool user_init()
 	// Text
 	// setup freetype
 	if (!init_text()) return false;
+
+	srand((unsigned int)time(NULL));
 	update_box_vertex_buffer(create_box_vertices(), box_vertex_array);
 	update_skybox_vertex_buffer(create_skybox_vertices(), skybox_vertex_array);
-	//box = Box(texture_paths[0], 1.0f, 1.0f, 3.0f);
+	update_grass_vertex_buffer(create_grass_vertices(), grass_vertex_array);
+	
+	for(int i = 0; i < 500; i++)
+		grass.push_back(Grass(vec3(float((rand() % 50) - 25), float((rand() % 50) - 25), 0.0f), vec3(1.0f, 1.0f, (rand() % 10) / 15.0f + 0.5f)));
+	ground = Box(texture_paths[0], 100.0f, 100.0f, 1.0f, 1.0f, vec3(0,0,0));
 	character = Character(vec3(0.0f, 0.0f, 0.0f), 1.0f);
 	zombie = Zombie(vec3(4.0f, 0.0f, 0.0f), 1.0f);
 	skybox = Box(texture_paths[1], 1.0f, 1.0f, 1.0f, 100.0f, vec3(-100.0f, 0.0f, 0.0f), 1.0f, PI/2);

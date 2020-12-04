@@ -13,13 +13,13 @@ public:
 	Character() {}
 	Character(vec3 pos, float scale) {
 		weapon_speed = 10.0f;
-		arm1 = Box(character_texture[2], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.75f, 1.5f), 1.0f);
-		arm2 = Box(character_texture[2], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.75f, 1.5f), 1.0f, PI/4.0f, weapon_speed, 0.0f, PI);
-		body = Box(character_texture[1], 1.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 1.5f), 0.0f);
-		leg1 = Box(character_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.25f, 0.5f), -1.0f);
-		leg2 = Box(character_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.25f, 0.5f), 1.0f);
-		head = Box(character_texture[0], 2.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 2.25f), 0.0f);
-		weapon = Weapon(character_texture[3], vec3(0.0f, 0.75f, 1.5f), 1.0f, weapon_speed, PI);
+		arm1 = Box(character_texture[2], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.75f, 1.5f+0.5f), 1.0f);
+		arm2 = Box(character_texture[2], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.75f, 1.5f + 0.5f), 1.0f, PI/4.0f, weapon_speed, 0.0f, PI);
+		body = Box(character_texture[1], 1.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 1.5f + 0.5f), 0.0f);
+		leg1 = Box(character_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.25f, 0.5f + 0.5f), -1.0f);
+		leg2 = Box(character_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.25f, 0.5f + 0.5f), 1.0f);
+		head = Box(character_texture[0], 2.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 2.25f + 0.5f), 0.0f);
+		weapon = Weapon(character_texture[3], vec3(0.0f, 0.75f, 1.5f + 0.5f), 1.0f, weapon_speed, PI);
 		this->pos = pos;
 		this->scale = scale;
 		this->speed_scale = 8.0f;
