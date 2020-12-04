@@ -3,9 +3,9 @@
 #define __ZOMBIE__
 const char* zombie_texture[4] = {
 	"../bin/textures/zombie_head2.bmp",
-	"../bin/textures/zombie_body.bmp",
-	"../bin/textures/zombie_body.bmp",
-	"../bin/textures/zombie_body.bmp"
+	"../bin/textures/zombie_body1.bmp",
+	"../bin/textures/zombie_arm.bmp",
+	"../bin/textures/zombie_leg.bmp"
 };
 class Zombie : public Character
 {
@@ -13,11 +13,11 @@ public:
 	Zombie() {}
 
 	Zombie(vec3 pos, float scale) {
-		arm1 = Box(zombie_texture[1], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.75f, 1.5f + 0.5f), 1.0f, PI/2, 15.0f);
-		arm2 = Box(zombie_texture[1], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.75f, 1.5f + 0.5f), 1.0f, PI/2, 15.0f);
+		arm1 = Box(zombie_texture[2], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.75f, 1.5f + 0.5f), 1.0f, PI/2, 5.0f);
+		arm2 = Box(zombie_texture[2], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.75f, 1.5f + 0.5f), 1.0f, PI/2, 5.0f);
 		body = Box(zombie_texture[1], 1.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 1.5f + 0.5f), 0.0f);
-		leg1 = Box(zombie_texture[1], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.25f, 0.5f + 0.5f), -1.0f);
-		leg2 = Box(zombie_texture[1], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.25f, 0.5f + 0.5f), 1.0f);
+		leg1 = Box(zombie_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.25f, 0.5f + 0.5f), -1.0f);
+		leg2 = Box(zombie_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.25f, 0.5f + 0.5f), 1.0f);
 		head = Box(zombie_texture[0], 2.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 2.25f + 0.5f), 0.0f);
 		this->pos = pos;
 		this->scale = scale;
@@ -29,10 +29,15 @@ public:
 
 	bool attacking = false;
 	bool knockbacking = false;
+	bool hit = false;
 
 	void start_attack(float t) {
 		arm1.start_rotate(t);
 		arm2.start_rotate(t);
+	}
+	void end_attack() {
+		arm1.end_rotate();
+		arm2.end_rotate();
 	}
 
 	void knockback(vec3 force, float scale) {
@@ -43,8 +48,11 @@ public:
 	}
 
 	void update(float t, float delta_frame, vec3 playerPos) {
+
+		hit = false; // zombie hit signal restart
 		if (!knockbacking) {
 			if ((playerPos - pos).length() > 1.5f) {
+				end_attack();
 				float theta = atan2(playerPos.y - pos.y, playerPos.x - pos.x);
 				if (speed.length() < 1.0f) {
 					speed.x += cos(theta) * delta_frame * accel_scale;
@@ -66,7 +74,11 @@ public:
 				start_attack(t);
 			}
 		}
-
+		if (!arm1.isRotating(t)) {
+			if ((playerPos - pos).length() <= 1.5f) {
+				hit = true;
+			}
+		}
 		pos.x += speed.x * delta_frame * speed_scale;
 		pos.y += speed.y * delta_frame * speed_scale;
 		if (!x_moving && speed.x) {

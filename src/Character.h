@@ -1,11 +1,12 @@
 #pragma once
 #ifndef __CHARACTER__
 #define __CHARACTER__
-const char* character_texture[4] = {
+const char* character_texture[5] = {
 	"../bin/textures/ch_head.bmp",
 	"../bin/textures/ch_body.bmp",
 	"../bin/textures/ch_body.bmp",
-	"../bin/textures/ch_body.bmp"
+	"../bin/textures/ch_body.bmp",
+	"../bin/textures/sword.bmp"
 };
 class Character
 {
@@ -19,7 +20,7 @@ public:
 		leg1 = Box(character_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.25f, 0.5f + 0.5f), -1.0f);
 		leg2 = Box(character_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.25f, 0.5f + 0.5f), 1.0f);
 		head = Box(character_texture[0], 2.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 2.25f + 0.5f), 0.0f);
-		weapon = Weapon(character_texture[3], vec3(0.0f, 0.75f, 1.5f + 0.5f), 1.0f, weapon_speed, PI);
+		weapon = Weapon(character_texture[4], vec3(0.0f, 0.75f, 1.5f + 0.5f), 1.0f, weapon_speed, PI, 0);
 		this->pos = pos;
 		this->scale = scale;
 		this->speed_scale = 8.0f;
@@ -34,6 +35,7 @@ public:
 	vec2 speed;
 	float speed_theta;
 	float weapon_speed;
+	int life = 3;
 
 	bool x_moving, y_moving;
 

@@ -62,6 +62,7 @@ bool init_title(const char* image_path, GLuint& SRC, GLuint& vertex_array_image)
 void render_title(GLuint program, GLuint SRC, GLuint vertex_array_image, ivec2 window_size) {
 	// separable Gaussian filtering
 	glUseProgram(program);
+	glUniform1i(glGetUniformLocation(program, "mode"), 2);
 	glUniform1i(glGetUniformLocation(program, "is_title"), 1);
 	glBindTexture(GL_TEXTURE_2D, SRC);
 	glUniform1i(glGetUniformLocation(program, "TEX"), 0);

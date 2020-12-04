@@ -114,8 +114,4 @@ void main()
 		fragColor = text_color * vec4(1, 1, 1, alpha);
 	}
 
-	if (is_title == 1)
-	{
-		fragColor = texture(TEX, tc);
-	}
 }

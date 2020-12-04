@@ -33,6 +33,7 @@ static const char*	frag_shader_path = "../bin/shaders/trackball.frag";
 //static const char* wave_path = "../bin/sounds/strange-alarm.wav"; // Sound
 static const char* wave_path = "../bin/sounds/ophelia.mp3"; // Sound
 static const char* hit_sound_path = "../bin/sounds/punch.wav"; // Sound
+static const char* pain_sound_path = "../bin/sounds/Pain.wav"; // Sound
 
 
 static const char*	texture_paths[19] = {
@@ -123,6 +124,7 @@ static const char* image_path_help_back = "../bin/images/back.jpg";
 //*************************************
 
 bool pause = false;
+bool reset = false;
 bool wireframe = false;
 float t = 0.0f;
 float check_frame = 0.0f;
@@ -159,7 +161,7 @@ Zombie zombie;
 void update_sound() {
 	if (sound)
 	{
-		sound->setMinDistance(5.0f);	//minimum distance between a listener and the 3D sound source
+		sound->setMinDistance(2.0f);	//minimum distance between a listener and the 3D sound source
 	}
 	//set Dopper effect parameters
 	// two times than the real world Doppler effect
@@ -209,6 +211,15 @@ void update()
 		character_attack = true;
 		key_attack = false;
 	}
+	if (zombie.hit) {
+		character.life--;
+		if (character.life <= 0) {
+			character.life = 0;
+		}
+		sound_pos = irrklang::vec3df(0, 0, 0);
+		sound = engine->play3D(pain_sound_path, sound_pos, false, false, false);
+		update_sound();
+	}
 	if (character_attack) {
 		if (!character.isAttacking(t)) {
 			character_attack = false;
@@ -219,10 +230,13 @@ void update()
 				hit_time = float(glfwGetTime());
 				hit_vec = float(0.06 * cos(atan2((cam.at - zombie.getPos()).y, (cam.at - zombie.getPos()).x)));
 				hit_vec2 = float(0.05 * sin(atan2((cam.at - zombie.getPos()).y, (cam.at - zombie.getPos()).x)));
-				engine->removeAllSoundSources();
+				//engine->removeAllSoundSources();
+				//engine->removeSoundSource(sound->getSoundSource());
+				sound_pos = irrklang::vec3df(float(zombie.getPos().x), float(zombie.getPos().y), float(zombie.getPos().z));
 				sound = engine->play3D(hit_sound_path, sound_pos, false, false, false);
 				update_sound();
 				zombie.knockback((zombie.getPos() - character.getPos()).normalize(), knock_back_scale);
+				//sound_pos = irrklang::vec3df(0, 0, 0);
 			}
 		}
 	}
@@ -283,8 +297,14 @@ void render()
 		if (hit_attack) {
 			render_text_3d("Hit!", int(window_size.x * (0.47f + hit_vec + 0.02f*(character.getPos()-zombie.getPos()).x)), int(window_size.y * (0.3500f - hit_vec2 - 0.01f* (character.getPos() - zombie.getPos()).y)), 1.0f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
 		}
-
-		render_text_3d("Life", int(window_size.x * 0.8), int(window_size.y*0.9), 1.0f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		if (character.life == 3)
+			render_text_3d("Life: X X X", int(window_size.x * 0.75), int(window_size.y*0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		else if (character.life == 2)
+			render_text_3d("Life: X X", int(window_size.x * 0.75), int(window_size.y*0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		else if (character.life == 1)
+			render_text_3d("Life: X", int(window_size.x * 0.75), int(window_size.y*0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		else
+			render_text_3d("Life:", int(window_size.x * 0.75), int(window_size.y * 0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
 
 		if (pause) {
 			//sound->setIsPaused(true);
@@ -297,6 +317,7 @@ void render()
 	}
 
 	else {
+
 		glDepthFunc(GL_ALWAYS);
 		// Title
 		render_title(program, SRC, vertex_array_title, window_size);
@@ -320,11 +341,10 @@ void print_help()
 {
 	printf( "[help]\n" );
 	printf( "- press ESC or 'q' to terminate the program\n" );
-	printf( "- press F1 or 'h' to see help\n" );
+	printf( "- press F1 to see help in game\n" );
 	printf( "- press Home to reset camera\n" );
-	printf( "- press Pause to pause/resume simulation\n");
-	printf( "- press W to toggle showing wireframe\n");
-	printf( "- press D to toggle rendering mode\n");
+	printf( "- press R to reset \n");
+
 	printf( "\n" );
 }
 
@@ -339,9 +359,10 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 	if(action==GLFW_PRESS)
 	{
 		if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q)	glfwSetWindowShouldClose(window, GL_TRUE);
-		else if (key == GLFW_KEY_H)								print_help();
-		else if (key == GLFW_KEY_HOME)							cam = camera();
-		else if (key == GLFW_KEY_F1 || key == GLFW_KEY_PAUSE)	pause = !pause;
+		else if (key == GLFW_KEY_H)					print_help();
+		else if (key == GLFW_KEY_HOME)				cam = camera();
+		else if (key == GLFW_KEY_F1)				pause = !pause;
+		else if (key == GLFW_KEY_R)					scene = 0;
 		else if (key == GLFW_KEY_PAGE_UP) {
 			wireframe = !wireframe;
 			glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
