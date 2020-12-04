@@ -34,6 +34,11 @@ uniform int mode;
 uniform int alphablending;
 uniform int bump;
 
+// model
+uniform bool use_texture;
+uniform vec4 diffuse;
+uniform int is_model;
+
 vec4 phong( vec3 l, vec3 n, vec3 h, vec4 Kd )
 {
 	vec4 Ira = Ka*Ia;									// ambient reflection
@@ -112,6 +117,9 @@ void main()
 	if (is_text == 1) {
 		float alpha = texture(TEXT, tc).r;
 		fragColor = text_color * vec4(1, 1, 1, alpha);
+	}
+	if (is_model == 1) {
+		fragColor = use_texture ? texture(TEX, tc) : diffuse;
 	}
 
 }

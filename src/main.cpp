@@ -10,9 +10,13 @@
 #include "Zombie.h"
 #include "Grass.h"
 
+// model
+#include "assimp_loader.h"
+#include "cgut2.h"
+#include "tree.h"
+
 #include "irrKlang\irrKlang.h" // Sound
 #pragma comment(lib, "irrKlang.lib")
-
 
 
 
@@ -34,7 +38,6 @@ static const char*	frag_shader_path = "../bin/shaders/trackball.frag";
 static const char* wave_path = "../bin/sounds/ophelia.mp3"; // Sound
 static const char* hit_sound_path = "../bin/sounds/punch.wav"; // Sound
 static const char* pain_sound_path = "../bin/sounds/Pain.wav"; // Sound
-
 
 static const char*	texture_paths[19] = {
 	"../bin/textures/ground.bmp", "../bin/textures/skybox/Daylight Box UV.jpg", "../bin/textures/skybox/1.jpg"
@@ -121,6 +124,13 @@ static const char* image_path = "../bin/images/title4.jpg";
 static const char* image_path_help = "../bin/images/title2.jpg";
 static const char* image_path_help_back = "../bin/images/back.jpg";
 
+//*************************************
+// model
+std::vector<Tree> trees;
+bool is_model = false;
+int num_mesh = 10;
+static const char* mesh_obj = "../bin/mesh/Tree/CartoonTree.3ds";
+static const char* mesh_3ds = "../bin/mesh/head/head.3ds";
 //*************************************
 
 bool pause = false;
@@ -248,11 +258,14 @@ void update()
 	cam.eye = vec3(campos.x, campos.y, campos.z) + character.getPos();
 	cam.view_matrix = mat4::look_at(cam.eye, cam.at, cam.up);
 
+
 	// update uniform variables in vertex/fragment shaders
 	GLint uloc;
 	uloc = glGetUniformLocation(program, "view_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, cam.view_matrix);
 	uloc = glGetUniformLocation(program, "projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, cam.projection_matrix);
-
+	glUniform1i(glGetUniformLocation(program, "is_model"), 1);
+	for (auto& t : trees) t.update(program);
+	glUniform1i(glGetUniformLocation(program, "is_model"), 0);
 	// setup light properties
 	glUniform4fv(glGetUniformLocation(program, "light_position"), 1, light.position);
 	glUniform4fv(glGetUniformLocation(program, "Ia"), 1, light.ambient);
@@ -290,6 +303,9 @@ void render()
 		character.render(program);
 		zombie.render(program);
 
+		// model
+		for (auto& t : trees) t.render(program);
+
 		glBindVertexArray(skybox_vertex_array);
 		skybox.render(program, 2);
 
@@ -314,6 +330,8 @@ void render()
 			render_text("Press F1 to resume", int(window_size.x * 0.8), int(window_size.y*0.8), 1.0f, vec4(0.0f, 0.0f, 0.0f, a), dpi_scale);
 			render_text("<Help>", -int(window_size.x * 0.2), int(window_size.y * 0.07), 1.3f, vec4(255.0f, 255.0f, 255.0f, 1.0f), dpi_scale);
 		}
+
+		
 	}
 
 	else {
@@ -540,6 +558,11 @@ bool user_init()
 	// Help
 	if (!init_help(image_path_help, image_path_help_back, SRC_help, back_help, vertex_array_help, vertex_array_back_help)) return false;
 
+
+	// load the mesh
+	for (int i = 0; i < num_mesh; i++) {
+		trees.push_back(Tree(load_model(mesh_obj), vec3(1.0f, 1.0f, 1.0f), vec3(float((rand() % 40) - 20), float((rand() % 40) - 20), 0.0f)));
+	}
 	return true;
 }
 
@@ -548,6 +571,13 @@ void user_finalize()
 	// Sound
 	if (sound) sound->drop(); // release sound stream.
 	engine->drop(); // delete engine
+
+	// model
+	for (int i = 0; i < num_mesh; i++)
+	{
+		delete_texture_cache();
+		delete trees[i].pMesh;
+	}
 }
 
 int main( int argc, char* argv[] )

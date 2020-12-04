@@ -76,7 +76,10 @@ public:
 		}
 		if (!arm1.isRotating(t)) {
 			if ((playerPos - pos).length() <= 1.5f) {
-				hit = true;
+				// Higher accuracy for hit range
+				if (int(speed_theta) == int(atan2((playerPos - pos).y, (playerPos - pos).x))) {
+					hit = true;
+				}
 			}
 		}
 		pos.x += speed.x * delta_frame * speed_scale;
@@ -97,6 +100,7 @@ public:
 			leg2.start_rotate(t);
 		}
 		else {
+			speed_theta = (atan2((playerPos - pos).y, (playerPos - pos).x)); // For hight accuracy right position.
 			knockbacking = false;
 			leg1.end_rotate();
 			leg2.end_rotate();
