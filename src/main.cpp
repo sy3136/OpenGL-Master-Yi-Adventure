@@ -9,6 +9,7 @@
 #include "Character.h"
 #include "Zombie.h"
 #include "Grass.h"
+#include "Tree.h"
 
 #include "irrKlang\irrKlang.h" // Sound
 #pragma comment(lib, "irrKlang.lib")
