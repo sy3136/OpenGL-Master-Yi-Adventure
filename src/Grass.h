@@ -1,6 +1,7 @@
 #pragma once
 #ifndef __GRASS__
 #define __GRASS__
+
 const char* grass_texture[1] = {
 	"../bin/textures/grass.bmp",
 };

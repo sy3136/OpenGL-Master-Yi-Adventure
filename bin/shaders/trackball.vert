@@ -22,6 +22,10 @@ uniform int is_text;
 uniform int is_back;
 uniform int is_title;
 
+// model
+uniform int is_model;
+uniform mat4 tree_matrix;
+
 void main()
 {
 	tc = texcoord;
@@ -44,6 +48,11 @@ void main()
 			gl_Position = vec4(position, 1);
 		}
 		tc = texcoord;
+	}
+	if (is_model == 1) {
+		wpos = tree_matrix * vec4(position, 1);
+		epos = view_matrix * wpos;
+		gl_Position = projection_matrix * epos;
 	}
 
 

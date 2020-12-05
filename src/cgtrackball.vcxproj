@@ -43,6 +43,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
       <AdditionalIncludeDirectories>gl;</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -54,14 +55,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="assimp_loader.cpp" />
     <ClCompile Include="gl\glad\glad.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="text.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="assimp_loader.h" />
     <ClInclude Include="Box.h" />
     <ClInclude Include="cgmath.h" />
     <ClInclude Include="cgut.h" />
+    <ClInclude Include="cgut2.h" />
     <ClInclude Include="Character.h" />
     <ClInclude Include="Grass.h" />
     <ClInclude Include="help.h" />
@@ -69,6 +73,7 @@
     <ClInclude Include="stb_truetype.h" />
     <ClInclude Include="title.h" />
     <ClInclude Include="trackball.h" />
+    <ClInclude Include="tree.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="Weapon.h" />
     <ClInclude Include="Zombie.h" />

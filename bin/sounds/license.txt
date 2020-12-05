@@ -17,6 +17,16 @@ punch.mp3 -
 	http://soundbible.com/1418-Sharp-Punch.html
 	license: Creative Commons Sampling Plus 1.0
 
+zombie_die.wav -
+	http://soundbible.com/1040-Zombie-Gets-Attacked.html
+	license: Creative Commons Attribution 3.0
+
+zombie_die.mp3 -
+	http://soundbible.com/1040-Zombie-Gets-Attacked.html
+	license: Creative Commons Attribution 3.0
+Pain-wav -
+	http://soundbible.com/1454-Pain.html
+	license: Creative Commons Sampling Plus 1.0
 ==================================================================================================
 Creative Commons
 

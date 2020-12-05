@@ -11,9 +11,13 @@
 #include "Grass.h"
 #include "Tree.h"
 
+// model
+#include "assimp_loader.h"
+#include "cgut2.h"
+#include "tree.h"
+
 #include "irrKlang\irrKlang.h" // Sound
 #pragma comment(lib, "irrKlang.lib")
-
 
 
 
@@ -34,7 +38,7 @@ static const char*	frag_shader_path = "../bin/shaders/trackball.frag";
 //static const char* wave_path = "../bin/sounds/strange-alarm.wav"; // Sound
 static const char* wave_path = "../bin/sounds/ophelia.mp3"; // Sound
 static const char* hit_sound_path = "../bin/sounds/punch.wav"; // Sound
-
+static const char* pain_sound_path = "../bin/sounds/Pain.wav"; // Sound
 
 static const char*	texture_paths[19] = {
 	"../bin/textures/ground.bmp", "../bin/textures/skybox/Daylight Box UV.jpg", "../bin/textures/skybox/1.jpg"
@@ -122,8 +126,16 @@ static const char* image_path_help = "../bin/images/title2.jpg";
 static const char* image_path_help_back = "../bin/images/back.jpg";
 
 //*************************************
+// model
+std::vector<Tree> trees;
+bool is_model = false;
+int num_mesh = 10;
+static const char* mesh_obj = "../bin/mesh/Tree/CartoonTree.3ds";
+static const char* mesh_3ds = "../bin/mesh/head/head.3ds";
+//*************************************
 
 bool pause = false;
+bool reset = false;
 bool wireframe = false;
 float t = 0.0f;
 float check_frame = 0.0f;
@@ -143,9 +155,12 @@ bool control_key = false;
 bool key_A = false, key_D = false, key_W = false, key_S = false;
 bool key_attack = false;
 bool hit_attack = false;
+int	 hit_id = 0;
 float hit_time = float(glfwGetTime());
 float hit_vec = 0;
 float hit_vec2 = 0;
+
+bool is_zombie_dead = false;
 
 float knock_back_scale = 2.0f;
 
@@ -154,13 +169,15 @@ Box skybox;
 std::vector<Grass> grass;
 Character character;
 bool character_attack = false;
-Zombie zombie;
+//Zombie zombie;
+std::vector<Zombie> zombie;
+int num_zombie = 3;
 
 // Sound
 void update_sound() {
 	if (sound)
 	{
-		sound->setMinDistance(5.0f);	//minimum distance between a listener and the 3D sound source
+		sound->setMinDistance(2.0f);	//minimum distance between a listener and the 3D sound source
 	}
 	//set Dopper effect parameters
 	// two times than the real world Doppler effect
@@ -204,29 +221,60 @@ void update()
 	skybox.update(t, vec3(0, 0, 0), 0);
 
 	character.update(t, delta_frame);
-	zombie.update(t, delta_frame, character.pos);
+	int cnt = 0;
+	for (auto& z : zombie) {
+		if (z.life != 0) {
+			z.update(t, delta_frame, character.pos);
+		}
+		else {
+			zombie.erase(zombie.begin() + cnt);
+			num_zombie--;
+			break;
+		}
+		cnt++;
+	}
+
 	if (key_attack) {
 		character.attack(t);
 		character_attack = true;
 		key_attack = false;
 	}
+	for (auto& z : zombie) {
+		if (z.hit) {
+			character.life--;
+			if (character.life <= 0) {
+				character.life = 0;
+			}
+			sound_pos = irrklang::vec3df(0, 0, 0);
+			sound = engine->play3D(pain_sound_path, sound_pos, false, false, false);
+			update_sound();
+		}
+	}
 	if (character_attack) {
 		if (!character.isAttacking(t)) {
-			character_attack = false;
-			vec3 pos = character.getAttackingPos();
-			vec3 pos2 = zombie.getPos();
-			if ((zombie.getPos() - pos).length() < 2.0f) {
-				hit_attack = true;
-				hit_time = float(glfwGetTime());
-				hit_vec = float(0.06 * cos(atan2((cam.at - zombie.getPos()).y, (cam.at - zombie.getPos()).x)));
-				hit_vec2 = float(0.05 * sin(atan2((cam.at - zombie.getPos()).y, (cam.at - zombie.getPos()).x)));
-				engine->removeAllSoundSources();
-				sound = engine->play3D(hit_sound_path, sound_pos, false, false, false);
-				update_sound();
-				zombie.knockback((zombie.getPos() - character.getPos()).normalize(), knock_back_scale);
+			for (auto& z : zombie) {
+				character_attack = false;
+				vec3 pos = character.getAttackingPos();
+				vec3 pos2 = z.getPos();
+				if ((z.getPos() - pos).length() < 2.0f) {
+					hit_attack = true;
+					hit_time = float(glfwGetTime());
+					hit_vec = float(0.06 * cos(atan2((cam.at - z.getPos()).y, (cam.at - z.getPos()).x)));
+					hit_vec2 = float(0.05 * sin(atan2((cam.at - z.getPos()).y, (cam.at - z.getPos()).x)));
+					//engine->removeAllSoundSources();
+					//engine->removeSoundSource(sound->getSoundSource());
+					sound_pos = irrklang::vec3df(float(z.getPos().x), float(z.getPos().y), float(z.getPos().z));
+					sound = engine->play3D(hit_sound_path, sound_pos, false, false, false);
+					update_sound();
+					z.knockback((z.getPos() - character.getPos()).normalize(), knock_back_scale);
+					//sound_pos = irrklang::vec3df(0, 0, 0);
+					//hit_id = z.id;
+				}
 			}
 		}
 	}
+
+	
 	float hit_t = float(glfwGetTime());
 	if (hit_t - hit_time >= 0.5f)
 		hit_attack = false;
@@ -235,11 +283,14 @@ void update()
 	cam.eye = vec3(campos.x, campos.y, campos.z) + character.getPos();
 	cam.view_matrix = mat4::look_at(cam.eye, cam.at, cam.up);
 
+
 	// update uniform variables in vertex/fragment shaders
 	GLint uloc;
 	uloc = glGetUniformLocation(program, "view_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, cam.view_matrix);
 	uloc = glGetUniformLocation(program, "projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, cam.projection_matrix);
-
+	glUniform1i(glGetUniformLocation(program, "is_model"), 1);
+	for (auto& t : trees) t.update(program);
+	glUniform1i(glGetUniformLocation(program, "is_model"), 0);
 	// setup light properties
 	glUniform4fv(glGetUniformLocation(program, "light_position"), 1, light.position);
 	glUniform4fv(glGetUniformLocation(program, "Ia"), 1, light.ambient);
@@ -273,19 +324,36 @@ void render()
 		for (auto& g : grass) g.render(program, 2);
 
 		glBindVertexArray(box_vertex_array);
-		ground.render(program, 2);
+		ground.render(program, 2, 0);
 		character.render(program);
-		zombie.render(program);
-
-		glBindVertexArray(skybox_vertex_array);
-		skybox.render(program, 2);
-
-		float dpi_scale = cg_get_dpi_scale();
-		if (hit_attack) {
-			render_text_3d("Hit!", int(window_size.x * (0.47f + hit_vec + 0.02f*(character.getPos()-zombie.getPos()).x)), int(window_size.y * (0.3500f - hit_vec2 - 0.01f* (character.getPos() - zombie.getPos()).y)), 1.0f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		for (auto& z : zombie) {
+			if (z.life != 0) {
+				z.render(program);
+			}
 		}
 
-		render_text_3d("Life", int(window_size.x * 0.8), int(window_size.y*0.9), 1.0f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		// model
+		for (auto& t : trees) t.render(program);
+
+		glBindVertexArray(skybox_vertex_array);
+		skybox.render(program, 2, 0);
+
+		float dpi_scale = cg_get_dpi_scale();
+		for (auto& z : zombie) {
+			if (hit_attack && z.knockbacking) {
+				// if(hit_id == z.id) // One-by-One hit if want.
+					render_text_3d("Hit!", int(window_size.x * (0.47f + hit_vec + 0.02f * (character.getPos() - z.getPos()).x)), int(window_size.y * (0.3500f - hit_vec2 - 0.01f * (character.getPos() - z.getPos()).y)), 1.0f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+			}
+		}
+
+		if (character.life == 3)
+			render_text_3d("Life: X X X", int(window_size.x * 0.75), int(window_size.y*0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		else if (character.life == 2)
+			render_text_3d("Life: X X", int(window_size.x * 0.75), int(window_size.y*0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		else if (character.life == 1)
+			render_text_3d("Life: X", int(window_size.x * 0.75), int(window_size.y*0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		else
+			render_text_3d("Life:", int(window_size.x * 0.75), int(window_size.y * 0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
 
 		if (pause) {
 			//sound->setIsPaused(true);
@@ -295,9 +363,12 @@ void render()
 			render_text("Press F1 to resume", int(window_size.x * 0.8), int(window_size.y*0.8), 1.0f, vec4(0.0f, 0.0f, 0.0f, a), dpi_scale);
 			render_text("<Help>", -int(window_size.x * 0.2), int(window_size.y * 0.07), 1.3f, vec4(255.0f, 255.0f, 255.0f, 1.0f), dpi_scale);
 		}
+
+		
 	}
 
 	else {
+
 		glDepthFunc(GL_ALWAYS);
 		// Title
 		render_title(program, SRC, vertex_array_title, window_size);
@@ -321,11 +392,10 @@ void print_help()
 {
 	printf( "[help]\n" );
 	printf( "- press ESC or 'q' to terminate the program\n" );
-	printf( "- press F1 or 'h' to see help\n" );
+	printf( "- press F1 to see help in game\n" );
 	printf( "- press Home to reset camera\n" );
-	printf( "- press Pause to pause/resume simulation\n");
-	printf( "- press W to toggle showing wireframe\n");
-	printf( "- press D to toggle rendering mode\n");
+	printf( "- press R to reset \n");
+
 	printf( "\n" );
 }
 
@@ -340,9 +410,10 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 	if(action==GLFW_PRESS)
 	{
 		if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q)	glfwSetWindowShouldClose(window, GL_TRUE);
-		else if (key == GLFW_KEY_H)								print_help();
-		else if (key == GLFW_KEY_HOME)							cam = camera();
-		else if (key == GLFW_KEY_F1 || key == GLFW_KEY_PAUSE)	pause = !pause;
+		else if (key == GLFW_KEY_H)					print_help();
+		else if (key == GLFW_KEY_HOME)				cam = camera();
+		else if (key == GLFW_KEY_F1)				pause = !pause;
+		else if (key == GLFW_KEY_R)					scene = 0;
 		else if (key == GLFW_KEY_PAGE_UP) {
 			wireframe = !wireframe;
 			glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
@@ -512,7 +583,9 @@ bool user_init()
 		grass.push_back(Grass(vec3(float((rand() % 50) - 25), float((rand() % 50) - 25), 0.0f), vec3(1.0f, 1.0f, (rand() % 10) / 15.0f + 0.5f)));
 	ground = Box(texture_paths[0], 100.0f, 100.0f, 1.0f, 1.0f, vec3(0,0,0));
 	character = Character(vec3(0.0f, 0.0f, 0.0f), 1.0f);
-	zombie = Zombie(vec3(4.0f, 0.0f, 0.0f), 1.0f);
+	for (int i = 0; i < num_zombie; i++) {
+		zombie.push_back(Zombie(vec3(float((rand() % 10) - 10), 0.0f, 0.0f), 1.0f, false, i));
+	}
 	skybox = Box(texture_paths[1], 1.0f, 1.0f, 1.0f, 100.0f, vec3(-100.0f, 0.0f, 0.0f), 1.0f, PI/2);
 
 	// Title
@@ -520,6 +593,11 @@ bool user_init()
 	// Help
 	if (!init_help(image_path_help, image_path_help_back, SRC_help, back_help, vertex_array_help, vertex_array_back_help)) return false;
 
+
+	// load the mesh
+	for (int i = 0; i < num_mesh; i++) {
+		trees.push_back(Tree(load_model(mesh_obj), vec3(1.0f, 1.0f, 1.0f), vec3(float((rand() % 40) - 20), float((rand() % 40) - 20), 0.0f)));
+	}
 	return true;
 }
 
@@ -528,6 +606,13 @@ void user_finalize()
 	// Sound
 	if (sound) sound->drop(); // release sound stream.
 	engine->drop(); // delete engine
+
+	// model
+	for (int i = 0; i < num_mesh; i++)
+	{
+		delete_texture_cache();
+		delete trees[i].pMesh;
+	}
 }
 
 int main( int argc, char* argv[] )

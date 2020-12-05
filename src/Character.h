@@ -1,11 +1,12 @@
 #pragma once
 #ifndef __CHARACTER__
 #define __CHARACTER__
-const char* character_texture[4] = {
+const char* character_texture[5] = {
 	"../bin/textures/ch_head.bmp",
 	"../bin/textures/ch_body.bmp",
 	"../bin/textures/ch_body.bmp",
-	"../bin/textures/ch_body.bmp"
+	"../bin/textures/ch_body.bmp",
+	"../bin/textures/sword.bmp"
 };
 class Character
 {
@@ -19,7 +20,7 @@ public:
 		leg1 = Box(character_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.25f, 0.5f + 0.5f), -1.0f);
 		leg2 = Box(character_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.25f, 0.5f + 0.5f), 1.0f);
 		head = Box(character_texture[0], 2.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 2.25f + 0.5f), 0.0f);
-		weapon = Weapon(character_texture[3], vec3(0.0f, 0.75f, 1.5f + 0.5f), 1.0f, weapon_speed, PI);
+		weapon = Weapon(character_texture[4], vec3(0.0f, 0.75f, 1.5f + 0.5f), 1.0f, weapon_speed, PI, 0);
 		this->pos = pos;
 		this->scale = scale;
 		this->speed_scale = 8.0f;
@@ -34,7 +35,9 @@ public:
 	vec2 speed;
 	float speed_theta;
 	float weapon_speed;
+	int life = 3;
 
+	bool is_dead = false;
 	bool x_moving, y_moving;
 
 	vec3 getAttackingPos() { return pos + vec3(cos(speed_theta), sin(speed_theta), 0); }
@@ -103,13 +106,13 @@ public:
 	}
 
 	void render(GLuint program) {
-		arm1.render(program, 0);
-		arm2.render(program, 0);
-		leg1.render(program, 0);
-		leg2.render(program, 0);
-		body.render(program, 0);
-		head.render(program, 0);
-		weapon.render(program, 0);
+		arm1.render(program, 0, is_dead);
+		arm2.render(program, 0, is_dead);
+		leg1.render(program, 0, is_dead);
+		leg2.render(program, 0, is_dead);
+		body.render(program, 0, is_dead);
+		head.render(program, 0, is_dead);
+		weapon.render(program, 0, is_dead);
 	}
 };
 
