@@ -237,12 +237,12 @@ void update()
 
 	for (std::vector<Zombie>::iterator it = zombie.begin(); it != zombie.end();) {
 		it->update(t, delta_frame, character.pos);
-		if (!it->knockbacking && it->cur_life <= 0) {
-			sound_pos = irrklang::vec3df(float(it->getPos().x), float(it->getPos().y), float(it->getPos().z));
-			sound = engine->play3D(zombie_dead_sound_path, sound_pos, false, false, false);
-			update_sound();
-			it = zombie.erase(it);
-			continue;
+		if (it->cur_life <= 0) {
+
+			if (!it->knockbacking) {
+				it = zombie.erase(it);
+				continue;
+			}
 		}
 		it++;
 	}
@@ -263,8 +263,15 @@ void update()
 					sound_pos = irrklang::vec3df(float(z.getPos().x), float(z.getPos().y), float(z.getPos().z));
 					sound = engine->play3D(hit_sound_path, sound_pos, false, false, false);
 					update_sound();
-
+					
 					z.knockback((z.getPos() - character.getPos()).normalize(), knock_back_scale, character.weapon.power);
+					if (z.cur_life <= 0) {
+						sound_pos = irrklang::vec3df(float(z.getPos().x), float(z.getPos().y), float(z.getPos().z));
+						sound = engine->play3D(zombie_dead_sound_path, sound_pos, false, false, false);
+						update_sound();
+					}
+
+	
 					//sound_pos = irrklang::vec3df(0, 0, 0);
 					//hit_id = z.id;
 				}
@@ -639,11 +646,11 @@ int main( int argc, char* argv[] )
 	// create window and initialize OpenGL extensions
 	if(!(window = cg_create_window( window_name, window_size.x, window_size.y ))){ glfwTerminate(); return 1; }
 	if(!cg_init_extensions( window )){ glfwTerminate(); return 1; }	// version and extensions
+	if (!(program = cg_create_program(vert_shader_path, frag_shader_path))) { glfwTerminate(); return 1; }	// create and compile shaders/program
 
 	bool is_destroy_window = true;
 	while (!restart) {
 		// initializations and validations
-		if (!(program = cg_create_program(vert_shader_path, frag_shader_path))) { glfwTerminate(); return 1; }	// create and compile shaders/program
 		if (!user_init()) { printf("Failed to user_init()\n"); glfwTerminate(); return 1; }					// user initialization
 			// register event callbacks
 		glfwSetWindowSizeCallback(window, reshape);	// callback for window resizing events
@@ -658,6 +665,7 @@ int main( int argc, char* argv[] )
 			if (pause) delta_frame = 0.0f;
 			check_frame = float(glfwGetTime());
 
+			printf("%d", program);
 			glfwPollEvents();	// polling and processing of events
 			if (restart == true) {
 				restart = false;
