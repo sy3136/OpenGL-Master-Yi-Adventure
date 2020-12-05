@@ -1,6 +1,9 @@
 #pragma once
 #ifndef __CHARACTER__
 #define __CHARACTER__
+
+static const char* sword_obj = "../bin/mesh/Axe.obj";
+
 const char* character_texture[5] = {
 	"../bin/textures/ch_head.bmp",
 	"../bin/textures/ch_body.bmp",
@@ -20,7 +23,11 @@ public:
 		leg1 = Box(character_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.25f, 0.5f + 0.5f), -1.0f);
 		leg2 = Box(character_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.25f, 0.5f + 0.5f), 1.0f);
 		head = Box(character_texture[0], 2.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 2.25f + 0.5f), 0.0f);
-		weapon = Weapon(character_texture[4], vec3(0.0f, 0.75f, 1.5f + 0.5f), 1.0f, weapon_speed, PI, 0);
+
+		sword_mesh = load_model(sword_obj);
+		weapon = Sword(sword_mesh, vec3(1.0f, 1.0f, 1.0f), vec3(0.0f, 0.75f, 1.5f + 0.5f),1.0f, weapon_speed, PI, 0);
+		//weapon = Weapon(character_texture[4], vec3(0.0f, 0.75f, 1.5f + 0.5f), 1.0f, weapon_speed, PI, 0);
+
 		this->pos = pos;
 		this->scale = scale;
 		this->speed_scale = 8.0f;
@@ -29,7 +36,11 @@ public:
 		speed_theta = 0;
 	}
 	Box arm1, arm2, leg1, leg2, body, head;
-	Weapon weapon;
+
+	//Weapon weapon;
+	mesh2* sword_mesh;
+	Sword weapon;
+
 	vec3 pos;
 	float scale, speed_scale, accel_scale;
 	vec2 speed;
@@ -56,13 +67,16 @@ public:
 
 	void attack(float t) {
 		arm2.start_rotate(t);
-		weapon.stick.start_rotate(t);
+		//weapon.stick.start_rotate(t);
+		weapon.start_rotate(t);
 		arm2.end_rotate();
-		weapon.stick.end_rotate();
+		//weapon.stick.end_rotate();
+		weapon.end_rotate();
 	}
 
 	bool isAttacking(float t) {
-		return weapon.stick.isRotating(t);
+		//return weapon.stick.isRotating(t);
+		return weapon.isRotating(t);
 	}
 
 	void start_moving(float t) {
@@ -80,7 +94,7 @@ public:
 		leg2.end_rotate();
 	}
 
-	void update(float t, float delta_frame) {
+	void update(GLuint program, float t, float delta_frame) {
 		pos.x += speed.x * delta_frame * speed_scale;
 		pos.y += speed.y * delta_frame * speed_scale;
 		if (!x_moving && speed.x) {
@@ -102,7 +116,7 @@ public:
 		leg2.update(t, pos, speed_theta);
 		body.update(t, pos, speed_theta);
 		head.update(t, pos, speed_theta);
-		weapon.update(t, pos, speed_theta);
+		weapon.update(program, t, pos, speed_theta);
 	}
 
 	void render(GLuint program) {
@@ -112,6 +126,9 @@ public:
 		leg2.render(program, 0);
 		body.render(program, 0);
 		head.render(program, 0);
+
+		glBindVertexArray(sword_mesh->vertex_array);
+		//sword.render(program, 0);
 		weapon.render(program, 0);
 	}
 };

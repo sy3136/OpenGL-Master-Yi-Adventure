@@ -71,6 +71,7 @@
     <ClInclude Include="help.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_truetype.h" />
+    <ClInclude Include="sword.h" />
     <ClInclude Include="title.h" />
     <ClInclude Include="trackball.h" />
     <ClInclude Include="tree.h" />

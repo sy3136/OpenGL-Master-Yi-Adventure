@@ -1,5 +1,11 @@
 #include "cgmath.h"		// slee's simple math library
 #include "cgut.h"		// slee's OpenGL utility
+// model
+#include "assimp_loader.h"
+#include "cgut2.h"
+#include "tree.h"
+#include "sword.h"
+
 #include "trackball.h"	// virtual trackball
 #include "utils.h"
 #include "Box.h"
@@ -10,10 +16,6 @@
 #include "Zombie.h"
 #include "Grass.h"
 
-// model
-#include "assimp_loader.h"
-#include "cgut2.h"
-#include "tree.h"
 
 #include "irrKlang\irrKlang.h" // Sound
 #pragma comment(lib, "irrKlang.lib")
@@ -129,6 +131,7 @@ static const char* image_path_help_back = "../bin/images/back.jpg";
 bool is_model = false;
 int num_mesh = 500;
 static const char* mesh_obj = "../bin/mesh/Tree/CartoonTree.3ds";
+//static const char* sword_obj = "../bin/mesh/Axe.obj";
 static const char* mesh_3ds = "../bin/mesh/head/head.3ds";
 //*************************************
 
@@ -143,6 +146,7 @@ GLuint  box_vertex_array = 0;
 GLuint  skybox_vertex_array = 0;
 GLuint	grass_vertex_array = 0;
 mesh2*	tree_mesh;
+//mesh2*	sword_mesh;
 int		box_poligon_num = 12;
 
 bool updateRotating = false;
@@ -167,6 +171,7 @@ Box ground;
 Box skybox;
 std::vector<Grass> grass;
 std::vector<Tree> trees;
+Sword sword;
 Character character;
 bool character_attack = false;
 //Zombie zombie;
@@ -220,23 +225,20 @@ void update()
 	for (auto& g : grass) g.update(t);
 	skybox.update(t, vec3(0, 0, 0), 0);
 
-	character.update(t, delta_frame);
+	character.update(program, t, delta_frame);
 
 	if (key_attack) {
 		character.attack(t);
 		character_attack = true;
 		key_attack = false;
 	}
-	for (auto& z : zombie) {
-		if (z.hit) {
-			character.life--;
-			if (character.life <= 0) {
-				character.life = 0;
-			}
-			sound_pos = irrklang::vec3df(0, 0, 0);
-			sound = engine->play3D(pain_sound_path, sound_pos, false, false, false);
-			update_sound();
+	for (std::vector<Zombie>::iterator it = zombie.begin(); it != zombie.end();) {
+		it->update(t, delta_frame, character.pos);
+		if (!it->knockbacking && it->cur_life <= 0) {
+			it = zombie.erase(it);
+			continue;
 		}
+		it++;
 	}
 	if (character_attack) {
 		if (!character.isAttacking(t)) {
@@ -261,17 +263,18 @@ void update()
 			}
 		}
 	}
-
-	for (std::vector<Zombie>::iterator it = zombie.begin(); it != zombie.end();) {
-		if (it->cur_life != 0) {
-			it->update(t, delta_frame, character.pos);
+	for (auto& z : zombie) {
+		if (z.hit) {
+			character.life--;
+			if (character.life <= 0) {
+				character.life = 0;
+			}
+			sound_pos = irrklang::vec3df(0, 0, 0);
+			sound = engine->play3D(pain_sound_path, sound_pos, false, false, false);
+			update_sound();
 		}
-		else {
-			it = zombie.erase(it);
-			continue;
-		}
-		it++;
 	}
+	
 	float hit_t = float(glfwGetTime());
 	if (hit_t - hit_time >= 0.5f)
 		hit_attack = false;
@@ -286,6 +289,10 @@ void update()
 	uloc = glGetUniformLocation(program, "view_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, cam.view_matrix);
 	uloc = glGetUniformLocation(program, "projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, cam.projection_matrix);
 	for (auto& t : trees) t.update(program);
+
+	//glUniform1i(glGetUniformLocation(program, "is_sword"), 1);
+	//sword.update(program, t, delta_frame);
+	//glUniform1i(glGetUniformLocation(program, "is_sword"), 0);
 	// setup light properties
 	glUniform4fv(glGetUniformLocation(program, "light_position"), 1, light.position);
 	glUniform4fv(glGetUniformLocation(program, "Ia"), 1, light.ambient);
@@ -320,17 +327,19 @@ void render()
 
 		glBindVertexArray(box_vertex_array);
 		ground.render(program, 2);
-		character.render(program);
 		for (auto& z : zombie) {
 			if (z.cur_life != 0) {
 				z.render(program);
 			}
 		}
 
+		character.render(program);
 		// model
 		glBindVertexArray(tree_mesh->vertex_array);
 		for (auto& t : trees) t.render(program, 0);
 
+		//glBindVertexArray(sword_mesh->vertex_array);
+		//sword.render(program, 0);
 		glBindVertexArray(skybox_vertex_array);
 		skybox.render(program, 2);
 
@@ -587,11 +596,14 @@ bool user_init()
 	if (!init_help(image_path_help, image_path_help_back, SRC_help, back_help, vertex_array_help, vertex_array_back_help)) return false;
 
 
+
 	// load the mesh
 	tree_mesh = load_model(mesh_obj);
 	for (int i = 0; i < num_mesh; i++) {
 		trees.push_back(Tree(tree_mesh, vec3(1.0f, 1.0f, 1.0f), vec3(float((rand() % 200) - 100), float((rand() % 200) - 100), 1.0f)));
 	}
+
+
 	return true;
 }
 
@@ -604,6 +616,8 @@ void user_finalize()
 	// model
 	delete_texture_cache();
 	delete trees[0].pMesh;
+	delete_texture_cache();
+	//delete sword_mesh;
 }
 
 int main( int argc, char* argv[] )

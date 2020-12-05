@@ -39,6 +39,7 @@ uniform int bump;
 uniform bool use_texture;
 uniform vec4 diffuse;
 uniform int is_model;
+uniform int is_sword;
 
 vec4 phong( vec3 l, vec3 n, vec3 h, vec4 Kd )
 {
@@ -105,6 +106,7 @@ void main()
 
 	vec4 iKd = texture( TEX, tc );	// Kd from image
 	if (is_model == 1) iKd = use_texture ? texture(TEX, tc) : diffuse;
+	if (is_sword == 1) iKd = vec4(255, 0, 0, 1);
 	if (mode==0)		fragColor = phong( l, n, h, iKd );
 	else if(mode==1)	fragColor = phong( l, n, h, Kd );
 	else if(mode==2)	fragColor = iKd;
@@ -118,5 +120,6 @@ void main()
 		float alpha = texture(TEXT, tc).r;
 		fragColor = text_color * vec4(1, 1, 1, alpha);
 	}
+	
 	
 }

@@ -12,6 +12,7 @@ out mat3 matrix;
 
 // matrices
 uniform mat4 model_matrix;
+uniform mat4 sword_matrix;
 uniform mat4 view_matrix;
 uniform mat4 projection_matrix;
 uniform mat4 aspect_matrix;
@@ -21,10 +22,12 @@ uniform mat4 text_matrix;
 uniform int is_text;
 uniform int is_back;
 uniform int is_title;
+uniform int is_sword;
 
 void main()
 {
 	tc = texcoord;
+
 	vec4 wpos = model_matrix * vec4(position,1);
 	epos = view_matrix * wpos;
 	gl_Position = projection_matrix * epos;
@@ -45,4 +48,5 @@ void main()
 		}
 		tc = texcoord;
 	}
+
 }
