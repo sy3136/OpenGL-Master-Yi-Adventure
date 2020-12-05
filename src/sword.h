@@ -20,7 +20,7 @@ public:
 	int power;
 	mesh2* pMesh;
 	mat4 model_matrix;
-	vec3 weapon_pos_factor = vec3(-1.0f, 0.0f, 1.0f);
+	vec3 weapon_pos_factor = vec3(-1.88f, 0.0f, 1.0f);
 
 	float thetaxz = 5*PI/4;
 
@@ -51,8 +51,7 @@ public:
 
 	void update(GLuint program, float t, vec3 pos, float theta) {
 		float origin_theta_c = cos(thetaxz), origin_theta_s = sin(thetaxz);
-		mat4 weapon_rotation_matrix = mat4::rotate(vec3(0, 0, 1), PI / 2.0f);
-
+		mat4 weapon_rotation_matrix = mat4::rotate(vec3(0, 0, 1), PI / 2.0f) * mat4::rotate(vec3(0, -1, 0), PI / 2.0f);
 		mat4 rotation_matrix =
 		{
 			origin_theta_c, 0, -origin_theta_s, 0,

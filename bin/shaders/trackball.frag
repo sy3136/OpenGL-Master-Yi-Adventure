@@ -106,7 +106,7 @@ void main()
 
 	vec4 iKd = texture( TEX, tc );	// Kd from image
 	if (is_model == 1) iKd = use_texture ? texture(TEX, tc) : diffuse;
-	if (is_sword == 1) iKd = vec4(255, 0, 0, 1);
+	//if (is_sword == 1) iKd = vec4(255, 0, 0, 1);
 	if (mode==0)		fragColor = phong( l, n, h, iKd );
 	else if(mode==1)	fragColor = phong( l, n, h, Kd );
 	else if(mode==2)	fragColor = iKd;

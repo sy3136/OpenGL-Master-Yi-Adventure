@@ -20,10 +20,9 @@
 #include "irrKlang\irrKlang.h" // Sound
 #pragma comment(lib, "irrKlang.lib")
 
-
-
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
 //*******************************************************************
 // forward declarations for freetype text
 bool init_text();
@@ -38,8 +37,9 @@ static const char*	vert_shader_path = "../bin/shaders/trackball.vert";
 static const char*	frag_shader_path = "../bin/shaders/trackball.frag";
 //static const char* wave_path = "../bin/sounds/strange-alarm.wav"; // Sound
 static const char* wave_path = "../bin/sounds/ophelia.mp3"; // Sound
-static const char* hit_sound_path = "../bin/sounds/punch.wav"; // Sound
+static const char* hit_sound_path = "../bin/sounds/sword-swing.wav"; // Sound
 static const char* pain_sound_path = "../bin/sounds/Pain.wav"; // Sound
+static const char* zombie_dead_sound_path = "../bin/sounds/zombie_die.wav"; // Sound
 
 static const char*	texture_paths[19] = {
 	"../bin/textures/ground.bmp", "../bin/textures/skybox/Daylight Box UV.jpg", "../bin/textures/skybox/1.jpg"
@@ -178,6 +178,8 @@ bool character_attack = false;
 std::vector<Zombie> zombie;
 int num_zombie = 3;
 
+bool restart = false;
+
 // Sound
 void update_sound() {
 	if (sound)
@@ -232,14 +234,19 @@ void update()
 		character_attack = true;
 		key_attack = false;
 	}
+
 	for (std::vector<Zombie>::iterator it = zombie.begin(); it != zombie.end();) {
 		it->update(t, delta_frame, character.pos);
 		if (!it->knockbacking && it->cur_life <= 0) {
+			sound_pos = irrklang::vec3df(float(it->getPos().x), float(it->getPos().y), float(it->getPos().z));
+			sound = engine->play3D(zombie_dead_sound_path, sound_pos, false, false, false);
+			update_sound();
 			it = zombie.erase(it);
 			continue;
 		}
 		it++;
 	}
+
 	if (character_attack) {
 		if (!character.isAttacking(t)) {
 			for (auto& z : zombie) {
@@ -256,6 +263,7 @@ void update()
 					sound_pos = irrklang::vec3df(float(z.getPos().x), float(z.getPos().y), float(z.getPos().z));
 					sound = engine->play3D(hit_sound_path, sound_pos, false, false, false);
 					update_sound();
+
 					z.knockback((z.getPos() - character.getPos()).normalize(), knock_back_scale, character.weapon.power);
 					//sound_pos = irrklang::vec3df(0, 0, 0);
 					//hit_id = z.id;
@@ -415,7 +423,14 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		else if (key == GLFW_KEY_H)					print_help();
 		else if (key == GLFW_KEY_HOME)				cam = camera();
 		else if (key == GLFW_KEY_F1)				pause = !pause;
-		else if (key == GLFW_KEY_R)					scene = 0;
+		else if (key == GLFW_KEY_R) {
+			restart = true;
+			zombie.clear();
+			grass.clear();
+			trees.clear();
+
+			scene = 0;
+		}
 		else if (key == GLFW_KEY_PAGE_UP) {
 			wireframe = !wireframe;
 			glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
@@ -595,8 +610,6 @@ bool user_init()
 	// Help
 	if (!init_help(image_path_help, image_path_help_back, SRC_help, back_help, vertex_array_help, vertex_array_back_help)) return false;
 
-
-
 	// load the mesh
 	tree_mesh = load_model(mesh_obj);
 	for (int i = 0; i < num_mesh; i++) {
@@ -617,40 +630,51 @@ void user_finalize()
 	delete_texture_cache();
 	delete trees[0].pMesh;
 	delete_texture_cache();
-	//delete sword_mesh;
+	delete character.sword_mesh;
 }
 
 int main( int argc, char* argv[] )
 {
+
 	// create window and initialize OpenGL extensions
 	if(!(window = cg_create_window( window_name, window_size.x, window_size.y ))){ glfwTerminate(); return 1; }
 	if(!cg_init_extensions( window )){ glfwTerminate(); return 1; }	// version and extensions
 
-	// initializations and validations
-	if(!(program=cg_create_program( vert_shader_path, frag_shader_path ))){ glfwTerminate(); return 1; }	// create and compile shaders/program
-	if(!user_init()){ printf( "Failed to user_init()\n" ); glfwTerminate(); return 1; }					// user initialization
+	bool is_destroy_window = true;
+	while (!restart) {
+		// initializations and validations
+		if (!(program = cg_create_program(vert_shader_path, frag_shader_path))) { glfwTerminate(); return 1; }	// create and compile shaders/program
+		if (!user_init()) { printf("Failed to user_init()\n"); glfwTerminate(); return 1; }					// user initialization
+			// register event callbacks
+		glfwSetWindowSizeCallback(window, reshape);	// callback for window resizing events
+		glfwSetKeyCallback(window, keyboard);			// callback for keyboard events
+		glfwSetMouseButtonCallback(window, mouse);	// callback for mouse click inputs
+		glfwSetCursorPosCallback(window, motion);		// callback for mouse movement
+		// enters rendering/event loop
+		for (frame = 0; !glfwWindowShouldClose(window); frame++)
+		{
+			while (float(glfwGetTime()) - check_frame <= 0.016f);
+			delta_frame = float(glfwGetTime()) - check_frame;
+			if (pause) delta_frame = 0.0f;
+			check_frame = float(glfwGetTime());
 
-	// register event callbacks
-	glfwSetWindowSizeCallback( window, reshape );	// callback for window resizing events
-    glfwSetKeyCallback( window, keyboard );			// callback for keyboard events
-	glfwSetMouseButtonCallback( window, mouse );	// callback for mouse click inputs
-	glfwSetCursorPosCallback( window, motion );		// callback for mouse movement
-
-	// enters rendering/event loop
-	for( frame=0; !glfwWindowShouldClose(window); frame++ )
-	{
-		while (float(glfwGetTime()) - check_frame <= 0.016f);
-		delta_frame = float(glfwGetTime()) - check_frame;
-		if (pause) delta_frame = 0.0f;
-		check_frame = float(glfwGetTime());
-		
-		glfwPollEvents();	// polling and processing of events
-		update();			// per-frame update
-		render();			// per-frame render
+			glfwPollEvents();	// polling and processing of events
+			if (restart == true) {
+				restart = false;
+				is_destroy_window = false;
+				break;
+			}
+			update();			// per-frame update
+			render();			// per-frame render
+		}
+		// normal termination
+		user_finalize();
+		if (is_destroy_window) {
+			cg_destroy_window(window);
+		}
+		is_destroy_window = true;
 	}
-
-	// normal termination
-	user_finalize();
+	
 	cg_destroy_window(window);
 
 	return 0;

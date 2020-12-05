@@ -2,7 +2,7 @@
 #ifndef __CHARACTER__
 #define __CHARACTER__
 
-static const char* sword_obj = "../bin/mesh/Axe.obj";
+static const char* sword_obj = "../bin/mesh/Roma_Sword1_01.obj";
 
 const char* character_texture[5] = {
 	"../bin/textures/ch_head.bmp",

@@ -27,6 +27,9 @@ zombie_die.mp3 -
 Pain-wav -
 	http://soundbible.com/1454-Pain.html
 	license: Creative Commons Sampling Plus 1.0
+sword-swing.wav
+	http://soundbible.com/1176-Sword-Swing.html
+	license: Creative Commons Attribution 3.0
 ==================================================================================================
 Creative Commons
 
