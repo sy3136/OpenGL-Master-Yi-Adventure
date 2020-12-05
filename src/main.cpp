@@ -9,7 +9,6 @@
 #include "Character.h"
 #include "Zombie.h"
 #include "Grass.h"
-#include "Tree.h"
 
 // model
 #include "assimp_loader.h"
@@ -127,9 +126,8 @@ static const char* image_path_help_back = "../bin/images/back.jpg";
 
 //*************************************
 // model
-std::vector<Tree> trees;
 bool is_model = false;
-int num_mesh = 10;
+int num_mesh = 500;
 static const char* mesh_obj = "../bin/mesh/Tree/CartoonTree.3ds";
 static const char* mesh_3ds = "../bin/mesh/head/head.3ds";
 //*************************************
@@ -144,6 +142,7 @@ float delta_frame = 0.0f;
 GLuint  box_vertex_array = 0;
 GLuint  skybox_vertex_array = 0;
 GLuint	grass_vertex_array = 0;
+mesh2*	tree_mesh;
 int		box_poligon_num = 12;
 
 bool updateRotating = false;
@@ -167,6 +166,7 @@ float knock_back_scale = 2.0f;
 Box ground;
 Box skybox;
 std::vector<Grass> grass;
+std::vector<Tree> trees;
 Character character;
 bool character_attack = false;
 //Zombie zombie;
@@ -221,18 +221,6 @@ void update()
 	skybox.update(t, vec3(0, 0, 0), 0);
 
 	character.update(t, delta_frame);
-	int cnt = 0;
-	for (auto& z : zombie) {
-		if (z.life != 0) {
-			z.update(t, delta_frame, character.pos);
-		}
-		else {
-			zombie.erase(zombie.begin() + cnt);
-			num_zombie--;
-			break;
-		}
-		cnt++;
-	}
 
 	if (key_attack) {
 		character.attack(t);
@@ -256,7 +244,7 @@ void update()
 				character_attack = false;
 				vec3 pos = character.getAttackingPos();
 				vec3 pos2 = z.getPos();
-				if ((z.getPos() - pos).length() < 2.0f) {
+				if ((z.getPos() - pos).length() < 2.0f && !z.knockbacking) {
 					hit_attack = true;
 					hit_time = float(glfwGetTime());
 					hit_vec = float(0.06 * cos(atan2((cam.at - z.getPos()).y, (cam.at - z.getPos()).x)));
@@ -266,7 +254,7 @@ void update()
 					sound_pos = irrklang::vec3df(float(z.getPos().x), float(z.getPos().y), float(z.getPos().z));
 					sound = engine->play3D(hit_sound_path, sound_pos, false, false, false);
 					update_sound();
-					z.knockback((z.getPos() - character.getPos()).normalize(), knock_back_scale);
+					z.knockback((z.getPos() - character.getPos()).normalize(), knock_back_scale, character.weapon.power);
 					//sound_pos = irrklang::vec3df(0, 0, 0);
 					//hit_id = z.id;
 				}
@@ -274,7 +262,16 @@ void update()
 		}
 	}
 
-	
+	for (std::vector<Zombie>::iterator it = zombie.begin(); it != zombie.end();) {
+		if (it->cur_life != 0) {
+			it->update(t, delta_frame, character.pos);
+		}
+		else {
+			it = zombie.erase(it);
+			continue;
+		}
+		it++;
+	}
 	float hit_t = float(glfwGetTime());
 	if (hit_t - hit_time >= 0.5f)
 		hit_attack = false;
@@ -288,9 +285,7 @@ void update()
 	GLint uloc;
 	uloc = glGetUniformLocation(program, "view_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, cam.view_matrix);
 	uloc = glGetUniformLocation(program, "projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, cam.projection_matrix);
-	glUniform1i(glGetUniformLocation(program, "is_model"), 1);
 	for (auto& t : trees) t.update(program);
-	glUniform1i(glGetUniformLocation(program, "is_model"), 0);
 	// setup light properties
 	glUniform4fv(glGetUniformLocation(program, "light_position"), 1, light.position);
 	glUniform4fv(glGetUniformLocation(program, "Ia"), 1, light.ambient);
@@ -321,22 +316,23 @@ void render()
 		// notify GL that we use our own program
 		glUseProgram(program);
 		glBindVertexArray(grass_vertex_array);
-		for (auto& g : grass) g.render(program, 2);
+		for (auto& g : grass) g.render(program, 0);
 
 		glBindVertexArray(box_vertex_array);
-		ground.render(program, 2, 0);
+		ground.render(program, 2);
 		character.render(program);
 		for (auto& z : zombie) {
-			if (z.life != 0) {
+			if (z.cur_life != 0) {
 				z.render(program);
 			}
 		}
 
 		// model
-		for (auto& t : trees) t.render(program);
+		glBindVertexArray(tree_mesh->vertex_array);
+		for (auto& t : trees) t.render(program, 0);
 
 		glBindVertexArray(skybox_vertex_array);
-		skybox.render(program, 2, 0);
+		skybox.render(program, 2);
 
 		float dpi_scale = cg_get_dpi_scale();
 		for (auto& z : zombie) {
@@ -363,12 +359,9 @@ void render()
 			render_text("Press F1 to resume", int(window_size.x * 0.8), int(window_size.y*0.8), 1.0f, vec4(0.0f, 0.0f, 0.0f, a), dpi_scale);
 			render_text("<Help>", -int(window_size.x * 0.2), int(window_size.y * 0.07), 1.3f, vec4(255.0f, 255.0f, 255.0f, 1.0f), dpi_scale);
 		}
-
-		
 	}
 
 	else {
-
 		glDepthFunc(GL_ALWAYS);
 		// Title
 		render_title(program, SRC, vertex_array_title, window_size);
@@ -579,12 +572,12 @@ bool user_init()
 	update_skybox_vertex_buffer(create_skybox_vertices(), skybox_vertex_array);
 	update_grass_vertex_buffer(create_grass_vertices(), grass_vertex_array);
 	
-	for(int i = 0; i < 500; i++)
-		grass.push_back(Grass(vec3(float((rand() % 50) - 25), float((rand() % 50) - 25), 0.0f), vec3(1.0f, 1.0f, (rand() % 10) / 15.0f + 0.5f)));
+	for(int i = 0; i < 5000; i++)
+		grass.push_back(Grass(vec3(float((rand() % 200) - 100), float((rand() % 200) - 100), 0.0f), vec3(1.0f, 1.0f, (rand() % 10) / 15.0f + 0.5f)));
 	ground = Box(texture_paths[0], 100.0f, 100.0f, 1.0f, 1.0f, vec3(0,0,0));
 	character = Character(vec3(0.0f, 0.0f, 0.0f), 1.0f);
-	for (int i = 0; i < num_zombie; i++) {
-		zombie.push_back(Zombie(vec3(float((rand() % 10) - 10), 0.0f, 0.0f), 1.0f, false, i));
+	for (int i = 0; i < 50; i++) {
+		zombie.push_back(Zombie(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), float(rand() % 10)/10.0f + 0.5f, (rand() % 3) + 2.0f, (rand() % 3) + 2.0f, (rand() % 4) + 1));
 	}
 	skybox = Box(texture_paths[1], 1.0f, 1.0f, 1.0f, 100.0f, vec3(-100.0f, 0.0f, 0.0f), 1.0f, PI/2);
 
@@ -595,8 +588,9 @@ bool user_init()
 
 
 	// load the mesh
+	tree_mesh = load_model(mesh_obj);
 	for (int i = 0; i < num_mesh; i++) {
-		trees.push_back(Tree(load_model(mesh_obj), vec3(1.0f, 1.0f, 1.0f), vec3(float((rand() % 40) - 20), float((rand() % 40) - 20), 0.0f)));
+		trees.push_back(Tree(tree_mesh, vec3(1.0f, 1.0f, 1.0f), vec3(float((rand() % 200) - 100), float((rand() % 200) - 100), 1.0f)));
 	}
 	return true;
 }
@@ -608,11 +602,8 @@ void user_finalize()
 	engine->drop(); // delete engine
 
 	// model
-	for (int i = 0; i < num_mesh; i++)
-	{
-		delete_texture_cache();
-		delete trees[i].pMesh;
-	}
+	delete_texture_cache();
+	delete trees[0].pMesh;
 }
 
 int main( int argc, char* argv[] )

@@ -12,19 +12,19 @@ class Zombie : public Character
 public:
 	Zombie() {}
 	~Zombie() {}
-	Zombie(vec3 pos, float scale, int is_dead, int id) {
-		arm1 = Box(zombie_texture[2], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.75f, 1.5f + 0.5f), 1.0f, PI/2, 5.0f);
-		arm2 = Box(zombie_texture[2], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.75f, 1.5f + 0.5f), 1.0f, PI/2, 5.0f);
-		body = Box(zombie_texture[1], 1.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 1.5f + 0.5f), 0.0f);
-		leg1 = Box(zombie_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.25f, 0.5f + 0.5f), -1.0f);
-		leg2 = Box(zombie_texture[3], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.25f, 0.5f + 0.5f), 1.0f);
-		head = Box(zombie_texture[0], 2.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 2.25f + 0.5f), 0.0f);
+	Zombie(vec3 pos, float scale, float speed_scale, float accel_scale, int life) {
+		arm1 = Box(zombie_texture[2], 0.25f, 0.25f, 0.5f, scale, vec3(0.0f, -0.75f, 2.0f) * scale, 1.0f, PI/2, 5.0f);
+		arm2 = Box(zombie_texture[2], 0.25f, 0.25f, 0.5f, scale, vec3(0.0f, 0.75f, 2.0f) * scale, 1.0f, PI/2, 5.0f);
+		body = Box(zombie_texture[1], 0.25f, 0.5f, 0.5f, scale, vec3(0.0f, 0.0f, 2.0f) * scale, 0.0f);
+		leg1 = Box(zombie_texture[3], 0.25f, 0.25f, 0.5f, scale, vec3(0.0f, -0.25f, 1.0f) * scale, -1.0f);
+		leg2 = Box(zombie_texture[3], 0.25f, 0.25f, 0.5f, scale, vec3(0.0f, 0.25f, 1.0f) * scale, 1.0f);
+		head = Box(zombie_texture[0], 0.5f, 0.5f, 0.5f, scale, vec3(0.0f, 0.0f, 2.75f) * scale, 0.0f);
 		this->pos = pos;
 		this->scale = scale;
-		this->speed_scale = 3.0f;
-		this->accel_scale = 3.0f;
-		this->is_dead = is_dead;
-		this->id = id;
+		this->speed_scale = speed_scale;
+		this->accel_scale = accel_scale;
+		this->life = life;
+		this->cur_life = life;
 		x_moving = y_moving = attacking = false;
 		speed_theta = 0;
 	}
@@ -32,9 +32,9 @@ public:
 	bool attacking = false;
 	bool knockbacking = false;
 	bool hit = false;
-	bool is_dead = false;
 	bool is_hit = false;
-	int life = 3;
+	int life;
+	int cur_life;
 	int id;
 
 	void start_attack(float t) {
@@ -46,18 +46,16 @@ public:
 		arm2.end_rotate();
 	}
 
-	void knockback(vec3 force, float scale) {
+	void knockback(vec3 force, float scale, int power) {
 		speed.x = force.x * scale;
 		speed.y = force.y * scale;
 		knockbacking = true;
 		x_moving = y_moving = false;
+		cur_life -= power;
 	}
 
 	void update(float t, float delta_frame, vec3 playerPos) {
 
-		if (is_dead == true) {
-			life = 0;
-		}
 		hit = false; // zombie hit signal restart
 		if (!knockbacking) {
 			if ((playerPos - pos).length() > 1.5f) {
@@ -83,15 +81,6 @@ public:
 				start_attack(t);
 			}
 			is_hit = false;
-		}
-		else {
-			if (is_hit == false) {
-				life--;
-			}
-			is_hit = true;
-			if (life == 0) {
-				is_dead = true;
-			}
 		}
 
 
@@ -135,12 +124,13 @@ public:
 	}
 
 	void render(GLuint program) {
-		arm1.render(program, 0, is_dead);
-		arm2.render(program, 0, is_dead);
-		leg1.render(program, 0, is_dead);
-		leg2.render(program, 0, is_dead);
-		body.render(program, 0, is_dead);
-		head.render(program, 0, is_dead);
+		float alpha = (float)cur_life / (float)life;
+		arm1.render(program, 0, alpha);
+		arm2.render(program, 0, alpha);
+		leg1.render(program, 0, alpha);
+		leg2.render(program, 0, alpha);
+		body.render(program, 0, alpha);
+		head.render(program, 0, alpha);
 	}
 };
 

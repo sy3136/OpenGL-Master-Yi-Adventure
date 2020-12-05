@@ -138,8 +138,7 @@ public:
 		model_matrix = parent_translate_matrix * parent_rotation_matrix * my_translate_matrix * rotation_matrix * weapon_matrix * scale_matrix * translate_center;
 	}
 
-	void render(GLuint program, int mode, int is_dead) {
-		
+	void render(GLuint program, int mode, float alpha = 1.0f) {
 		GLint uloc;
 		uloc = glGetUniformLocation(program, "model_matrix");		if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		glActiveTexture(GL_TEXTURE0);
@@ -148,11 +147,9 @@ public:
 		glUniform1i(glGetUniformLocation(program, "alphablending"), 0);
 		glUniform1i(glGetUniformLocation(program, "bump"), 0);
 		glUniform1i(glGetUniformLocation(program, "TEX"), 0);
-		if (is_dead == false) {
-			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-		}
-		
+		glUniform1f(glGetUniformLocation(program, "set_alpha"), alpha);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+		glUniform1f(glGetUniformLocation(program, "set_alpha"), 0.0f);
 	}
 };
 

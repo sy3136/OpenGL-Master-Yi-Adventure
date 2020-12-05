@@ -13,7 +13,6 @@ public:
 		this->pos = pos;
 		this->scale = scale;
 		loadTexture(grass_texture[0], texture);
-		printf("initial\n");
 	}
 
 	vec3 pos;

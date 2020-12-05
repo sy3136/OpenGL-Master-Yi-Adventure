@@ -32,6 +32,7 @@ uniform int is_title;
 
 uniform int mode;
 uniform int alphablending;
+uniform float set_alpha;
 uniform int bump;
 
 // model
@@ -103,23 +104,19 @@ void main()
 	vec3 h = normalize(l+v);	// the halfway vector
 
 	vec4 iKd = texture( TEX, tc );	// Kd from image
-	if(mode==0)			fragColor = phong( l, n, h, iKd );
+	if (is_model == 1) iKd = use_texture ? texture(TEX, tc) : diffuse;
+	if (mode==0)		fragColor = phong( l, n, h, iKd );
 	else if(mode==1)	fragColor = phong( l, n, h, Kd );
 	else if(mode==2)	fragColor = iKd;
 	else				fragColor = vec4( tc, 0, 1 );
-
-	if(alphablending == 1)
-	{
+	if (set_alpha > 0.0) fragColor.a = set_alpha;
+	if (alphablending == 1) {
 		vec4 at = texture( ALPHATEX, tc);
 		if(at.r <= 0.2 && at.g <= 0.2 && at.b <= 0.2) discard;
 	}
-
 	if (is_text == 1) {
 		float alpha = texture(TEXT, tc).r;
 		fragColor = text_color * vec4(1, 1, 1, alpha);
 	}
-	if (is_model == 1) {
-		fragColor = use_texture ? texture(TEX, tc) : diffuse;
-	}
-
+	
 }
