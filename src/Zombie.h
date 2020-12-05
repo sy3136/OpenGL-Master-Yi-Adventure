@@ -11,8 +11,8 @@ class Zombie : public Character
 {
 public:
 	Zombie() {}
-
-	Zombie(vec3 pos, float scale) {
+	~Zombie() {}
+	Zombie(vec3 pos, float scale, int is_dead, int id) {
 		arm1 = Box(zombie_texture[2], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, -0.75f, 1.5f + 0.5f), 1.0f, PI/2, 5.0f);
 		arm2 = Box(zombie_texture[2], 1.0f, 1.0f, 2.0f, 0.25f, vec3(0.0f, 0.75f, 1.5f + 0.5f), 1.0f, PI/2, 5.0f);
 		body = Box(zombie_texture[1], 1.0f, 2.0f, 2.0f, 0.25f, vec3(0.0f, 0.0f, 1.5f + 0.5f), 0.0f);
@@ -23,6 +23,8 @@ public:
 		this->scale = scale;
 		this->speed_scale = 3.0f;
 		this->accel_scale = 3.0f;
+		this->is_dead = is_dead;
+		this->id = id;
 		x_moving = y_moving = attacking = false;
 		speed_theta = 0;
 	}
@@ -30,6 +32,10 @@ public:
 	bool attacking = false;
 	bool knockbacking = false;
 	bool hit = false;
+	bool is_dead = false;
+	bool is_hit = false;
+	int life = 3;
+	int id;
 
 	void start_attack(float t) {
 		arm1.start_rotate(t);
@@ -49,6 +55,9 @@ public:
 
 	void update(float t, float delta_frame, vec3 playerPos) {
 
+		if (is_dead == true) {
+			life = 0;
+		}
 		hit = false; // zombie hit signal restart
 		if (!knockbacking) {
 			if ((playerPos - pos).length() > 1.5f) {
@@ -73,7 +82,19 @@ public:
 				attacking = true;
 				start_attack(t);
 			}
+			is_hit = false;
 		}
+		else {
+			if (is_hit == false) {
+				life--;
+			}
+			is_hit = true;
+			if (life == 0) {
+				is_dead = true;
+			}
+		}
+
+
 		if (!arm1.isRotating(t)) {
 			if ((playerPos - pos).length() <= 1.5f) {
 				// Higher accuracy for hit range
@@ -114,12 +135,12 @@ public:
 	}
 
 	void render(GLuint program) {
-		arm1.render(program, 0);
-		arm2.render(program, 0);
-		leg1.render(program, 0);
-		leg2.render(program, 0);
-		body.render(program, 0);
-		head.render(program, 0);
+		arm1.render(program, 0, is_dead);
+		arm2.render(program, 0, is_dead);
+		leg1.render(program, 0, is_dead);
+		leg2.render(program, 0, is_dead);
+		body.render(program, 0, is_dead);
+		head.render(program, 0, is_dead);
 	}
 };
 

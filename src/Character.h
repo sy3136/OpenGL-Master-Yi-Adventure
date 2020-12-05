@@ -37,6 +37,7 @@ public:
 	float weapon_speed;
 	int life = 3;
 
+	bool is_dead = false;
 	bool x_moving, y_moving;
 
 	vec3 getAttackingPos() { return pos + vec3(cos(speed_theta), sin(speed_theta), 0); }
@@ -105,13 +106,13 @@ public:
 	}
 
 	void render(GLuint program) {
-		arm1.render(program, 0);
-		arm2.render(program, 0);
-		leg1.render(program, 0);
-		leg2.render(program, 0);
-		body.render(program, 0);
-		head.render(program, 0);
-		weapon.render(program, 0);
+		arm1.render(program, 0, is_dead);
+		arm2.render(program, 0, is_dead);
+		leg1.render(program, 0, is_dead);
+		leg2.render(program, 0, is_dead);
+		body.render(program, 0, is_dead);
+		head.render(program, 0, is_dead);
+		weapon.render(program, 0, is_dead);
 	}
 };
 

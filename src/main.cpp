@@ -154,9 +154,12 @@ bool control_key = false;
 bool key_A = false, key_D = false, key_W = false, key_S = false;
 bool key_attack = false;
 bool hit_attack = false;
+int	 hit_id = 0;
 float hit_time = float(glfwGetTime());
 float hit_vec = 0;
 float hit_vec2 = 0;
+
+bool is_zombie_dead = false;
 
 float knock_back_scale = 2.0f;
 
@@ -165,7 +168,9 @@ Box skybox;
 std::vector<Grass> grass;
 Character character;
 bool character_attack = false;
-Zombie zombie;
+//Zombie zombie;
+std::vector<Zombie> zombie;
+int num_zombie = 3;
 
 // Sound
 void update_sound() {
@@ -215,41 +220,60 @@ void update()
 	skybox.update(t, vec3(0, 0, 0), 0);
 
 	character.update(t, delta_frame);
-	zombie.update(t, delta_frame, character.pos);
+	int cnt = 0;
+	for (auto& z : zombie) {
+		if (z.life != 0) {
+			z.update(t, delta_frame, character.pos);
+		}
+		else {
+			zombie.erase(zombie.begin() + cnt);
+			num_zombie--;
+			break;
+		}
+		cnt++;
+	}
+
 	if (key_attack) {
 		character.attack(t);
 		character_attack = true;
 		key_attack = false;
 	}
-	if (zombie.hit) {
-		character.life--;
-		if (character.life <= 0) {
-			character.life = 0;
+	for (auto& z : zombie) {
+		if (z.hit) {
+			character.life--;
+			if (character.life <= 0) {
+				character.life = 0;
+			}
+			sound_pos = irrklang::vec3df(0, 0, 0);
+			sound = engine->play3D(pain_sound_path, sound_pos, false, false, false);
+			update_sound();
 		}
-		sound_pos = irrklang::vec3df(0, 0, 0);
-		sound = engine->play3D(pain_sound_path, sound_pos, false, false, false);
-		update_sound();
 	}
 	if (character_attack) {
 		if (!character.isAttacking(t)) {
-			character_attack = false;
-			vec3 pos = character.getAttackingPos();
-			vec3 pos2 = zombie.getPos();
-			if ((zombie.getPos() - pos).length() < 2.0f) {
-				hit_attack = true;
-				hit_time = float(glfwGetTime());
-				hit_vec = float(0.06 * cos(atan2((cam.at - zombie.getPos()).y, (cam.at - zombie.getPos()).x)));
-				hit_vec2 = float(0.05 * sin(atan2((cam.at - zombie.getPos()).y, (cam.at - zombie.getPos()).x)));
-				//engine->removeAllSoundSources();
-				//engine->removeSoundSource(sound->getSoundSource());
-				sound_pos = irrklang::vec3df(float(zombie.getPos().x), float(zombie.getPos().y), float(zombie.getPos().z));
-				sound = engine->play3D(hit_sound_path, sound_pos, false, false, false);
-				update_sound();
-				zombie.knockback((zombie.getPos() - character.getPos()).normalize(), knock_back_scale);
-				//sound_pos = irrklang::vec3df(0, 0, 0);
+			for (auto& z : zombie) {
+				character_attack = false;
+				vec3 pos = character.getAttackingPos();
+				vec3 pos2 = z.getPos();
+				if ((z.getPos() - pos).length() < 2.0f) {
+					hit_attack = true;
+					hit_time = float(glfwGetTime());
+					hit_vec = float(0.06 * cos(atan2((cam.at - z.getPos()).y, (cam.at - z.getPos()).x)));
+					hit_vec2 = float(0.05 * sin(atan2((cam.at - z.getPos()).y, (cam.at - z.getPos()).x)));
+					//engine->removeAllSoundSources();
+					//engine->removeSoundSource(sound->getSoundSource());
+					sound_pos = irrklang::vec3df(float(z.getPos().x), float(z.getPos().y), float(z.getPos().z));
+					sound = engine->play3D(hit_sound_path, sound_pos, false, false, false);
+					update_sound();
+					z.knockback((z.getPos() - character.getPos()).normalize(), knock_back_scale);
+					//sound_pos = irrklang::vec3df(0, 0, 0);
+					//hit_id = z.id;
+				}
 			}
 		}
 	}
+
+	
 	float hit_t = float(glfwGetTime());
 	if (hit_t - hit_time >= 0.5f)
 		hit_attack = false;
@@ -299,20 +323,28 @@ void render()
 		for (auto& g : grass) g.render(program, 2);
 
 		glBindVertexArray(box_vertex_array);
-		ground.render(program, 2);
+		ground.render(program, 2, 0);
 		character.render(program);
-		zombie.render(program);
+		for (auto& z : zombie) {
+			if (z.life != 0) {
+				z.render(program);
+			}
+		}
 
 		// model
 		for (auto& t : trees) t.render(program);
 
 		glBindVertexArray(skybox_vertex_array);
-		skybox.render(program, 2);
+		skybox.render(program, 2, 0);
 
 		float dpi_scale = cg_get_dpi_scale();
-		if (hit_attack) {
-			render_text_3d("Hit!", int(window_size.x * (0.47f + hit_vec + 0.02f*(character.getPos()-zombie.getPos()).x)), int(window_size.y * (0.3500f - hit_vec2 - 0.01f* (character.getPos() - zombie.getPos()).y)), 1.0f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		for (auto& z : zombie) {
+			if (hit_attack && z.knockbacking) {
+				// if(hit_id == z.id) // One-by-One hit if want.
+					render_text_3d("Hit!", int(window_size.x * (0.47f + hit_vec + 0.02f * (character.getPos() - z.getPos()).x)), int(window_size.y * (0.3500f - hit_vec2 - 0.01f * (character.getPos() - z.getPos()).y)), 1.0f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+			}
 		}
+
 		if (character.life == 3)
 			render_text_3d("Life: X X X", int(window_size.x * 0.75), int(window_size.y*0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
 		else if (character.life == 2)
@@ -550,7 +582,9 @@ bool user_init()
 		grass.push_back(Grass(vec3(float((rand() % 50) - 25), float((rand() % 50) - 25), 0.0f), vec3(1.0f, 1.0f, (rand() % 10) / 15.0f + 0.5f)));
 	ground = Box(texture_paths[0], 100.0f, 100.0f, 1.0f, 1.0f, vec3(0,0,0));
 	character = Character(vec3(0.0f, 0.0f, 0.0f), 1.0f);
-	zombie = Zombie(vec3(4.0f, 0.0f, 0.0f), 1.0f);
+	for (int i = 0; i < num_zombie; i++) {
+		zombie.push_back(Zombie(vec3(float((rand() % 10) - 10), 0.0f, 0.0f), 1.0f, false, i));
+	}
 	skybox = Box(texture_paths[1], 1.0f, 1.0f, 1.0f, 100.0f, vec3(-100.0f, 0.0f, 0.0f), 1.0f, PI/2);
 
 	// Title

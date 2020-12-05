@@ -12,8 +12,8 @@ public:
 		stick.update(t, pos, speed_theta);
 	}
 
-	void render(GLuint program, int mode) {
-		stick.render(program, mode);
+	void render(GLuint program, int mode, int is_dead) {
+		stick.render(program, mode, is_dead);
 	}
 };
 #endif
