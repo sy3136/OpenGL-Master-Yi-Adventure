@@ -15,6 +15,7 @@
 #include "Character.h"
 #include "Zombie.h"
 #include "Grass.h"
+#include "Particle.h"
 
 
 #include "irrKlang\irrKlang.h" // Sound
@@ -43,6 +44,12 @@ static const char* zombie_dead_sound_path = "../bin/sounds/zombie_die.wav"; // S
 
 static const char*	texture_paths[19] = {
 	"../bin/textures/ground.bmp", "../bin/textures/skybox/Daylight Box UV.jpg", "../bin/textures/skybox/1.jpg"
+};
+
+const char* blood_texture[3] = {
+	"../bin/textures/blood_texture1.bmp",
+	"../bin/textures/blood_texture2.bmp",
+	"../bin/textures/blood_texture3.bmp"
 };
 //*************************************
 // common structures
@@ -129,7 +136,6 @@ static const char* image_path_help_back = "../bin/images/back.jpg";
 //*************************************
 // model
 bool is_model = false;
-int num_mesh = 500;
 static const char* mesh_obj = "../bin/mesh/Tree/CartoonTree.3ds";
 //static const char* sword_obj = "../bin/mesh/Axe.obj";
 static const char* mesh_3ds = "../bin/mesh/head/head.3ds";
@@ -145,6 +151,7 @@ float delta_frame = 0.0f;
 GLuint  box_vertex_array = 0;
 GLuint  skybox_vertex_array = 0;
 GLuint	grass_vertex_array = 0;
+GLuint	plane_vertex_array = 0;
 mesh2*	tree_mesh;
 //mesh2*	sword_mesh;
 int		box_poligon_num = 12;
@@ -171,6 +178,8 @@ Box ground;
 Box skybox;
 std::vector<Grass> grass;
 std::vector<Tree> trees;
+std::vector<Particle> particles;
+GLuint blood_texture_id[3];
 Sword sword;
 Character character;
 bool character_attack = false;
@@ -225,8 +234,15 @@ void update()
 	for (auto& g : grass) g.update(t);
 	skybox.update(t, vec3(0, 0, 0), 0);
 
+	vec3 origin_char_pos = character.getPos();
 	character.update(program, t, delta_frame);
-
+	vec3 charpos = character.getPos();
+	for (auto& t : trees) {
+		if (((t.pos - vec3(0, 0, 1)) - charpos).length() < 1.0f) {
+			character.pos = origin_char_pos;
+			break;
+		}
+	}
 	if (key_attack) {
 		character.attack(t);
 		character_attack = true;
@@ -269,6 +285,9 @@ void update()
 						update_sound();
 					}
 
+					for (int i = 0; i < 5; i++) {
+						particles.push_back(Particle(z.getPos() + vec3(0, 0, 2.0f), vec3(float(rand() % 11) - 5.0f, float(rand() % 11) - 5.0f, float(rand() % 5)), 1.0f, 0.1f + (rand()%3)*0.15f, blood_texture_id[rand()%3]));//(rand() % 3) * 0.1f + 0.25f));
+					}
 	
 					//sound_pos = irrklang::vec3df(0, 0, 0);
 					//hit_id = z.id;
@@ -276,6 +295,13 @@ void update()
 			}
 		}
 	}
+	for (std::vector<Particle>::iterator it = particles.begin(); it != particles.end();) {
+		if (it->update(delta_frame))
+			it = particles.erase(it);
+		else
+			it++;
+	}
+
 	for (auto& z : zombie) {
 		if (z.hit) {
 			character.life--;
@@ -301,8 +327,7 @@ void update()
 	GLint uloc;
 	uloc = glGetUniformLocation(program, "view_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, cam.view_matrix);
 	uloc = glGetUniformLocation(program, "projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, cam.projection_matrix);
-	for (auto& t : trees) t.update(program);
-
+	
 	//glUniform1i(glGetUniformLocation(program, "is_sword"), 1);
 	//sword.update(program, t, delta_frame);
 	//glUniform1i(glGetUniformLocation(program, "is_sword"), 0);
@@ -344,8 +369,11 @@ void render()
 				z.render(program);
 			}
 		}
-
 		character.render(program);
+
+		glBindVertexArray(plane_vertex_array);
+		for (auto& p : particles) p.render(program);
+
 		// model
 		glBindVertexArray(tree_mesh->vertex_array);
 		for (auto& t : trees) t.render(program, 0);
@@ -602,27 +630,31 @@ bool user_init()
 	update_box_vertex_buffer(create_box_vertices(), box_vertex_array);
 	update_skybox_vertex_buffer(create_skybox_vertices(), skybox_vertex_array);
 	update_grass_vertex_buffer(create_grass_vertices(), grass_vertex_array);
+	update_plane_vertex_buffer(create_plane_vertices(), plane_vertex_array);
+
+	for (int i = 0; i < 3; i++)
+		loadTexture(blood_texture[i], blood_texture_id[i]);
 	
 	for(int i = 0; i < 5000; i++)
-		grass.push_back(Grass(vec3(float((rand() % 200) - 100), float((rand() % 200) - 100), 0.0f), vec3(1.0f, 1.0f, (rand() % 10) / 15.0f + 0.5f)));
+		grass.push_back(Grass(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), vec3(1.0f, 1.0f, (rand() % 10) / 15.0f + 0.5f)));
 	ground = Box(texture_paths[0], 100.0f, 100.0f, 1.0f, 1.0f, vec3(0,0,0));
 	character = Character(vec3(0.0f, 0.0f, 0.0f), 1.0f);
 	for (int i = 0; i < 50; i++) {
 		zombie.push_back(Zombie(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), float(rand() % 10)/10.0f + 0.5f, (rand() % 3) + 2.0f, (rand() % 3) + 2.0f, (rand() % 4) + 1));
 	}
-	skybox = Box(texture_paths[1], 1.0f, 1.0f, 1.0f, 100.0f, vec3(-100.0f, 0.0f, 0.0f), 1.0f, PI/2);
+	skybox = Box(texture_paths[1], 1.0f, 1.0f, 1.0f, 50.0f, vec3(-50.0f, 0.0f, 0.0f), 1.0f, PI/2);
+
+	// load the mesh
+	tree_mesh = load_model(mesh_obj);
+	for (int i = 0; i < 250; i++) {
+		trees.push_back(Tree(tree_mesh, vec3(1.0f, 1.0f, 1.0f), vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 1.0f)));
+		trees[i].update();
+	}
 
 	// Title
 	if (!init_title(image_path, SRC, vertex_array_title)) return false;
 	// Help
 	if (!init_help(image_path_help, image_path_help_back, SRC_help, back_help, vertex_array_help, vertex_array_back_help)) return false;
-
-	// load the mesh
-	tree_mesh = load_model(mesh_obj);
-	for (int i = 0; i < num_mesh; i++) {
-		trees.push_back(Tree(tree_mesh, vec3(1.0f, 1.0f, 1.0f), vec3(float((rand() % 200) - 100), float((rand() % 200) - 100), 1.0f)));
-	}
-
 
 	return true;
 }

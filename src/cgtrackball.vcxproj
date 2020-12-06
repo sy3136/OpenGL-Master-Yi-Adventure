@@ -69,6 +69,7 @@
     <ClInclude Include="Character.h" />
     <ClInclude Include="Grass.h" />
     <ClInclude Include="help.h" />
+    <ClInclude Include="Particle.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_truetype.h" />
     <ClInclude Include="sword.h" />

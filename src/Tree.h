@@ -16,7 +16,7 @@ public:
 	mesh2* pMesh;
 	mat4 model_matrix;
 
-	void update(GLuint program) {
+	void update() {
 		mat4 tree_scale_matrix = 
 		{
 			scale.x, 0, 0, 0,

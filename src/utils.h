@@ -26,6 +26,63 @@ void loadTexture(const char* path, GLuint& t) {
 	if (img) delete img;
 }
 
+std::vector<vertex> create_plane_vertices() {
+	std::vector<vertex> v;
+	v.push_back({ vec3(-1, 0, 2), vec3(-1, 0, 2).normalize(), vec2(0.0f, 1.0f) });
+	v.push_back({ vec3(1, 0, 2), vec3(1, 0, 2).normalize(), vec2(1.0f, 1.0f) });
+	v.push_back({ vec3(-1, 0, 0), vec3(-1, 0, 0).normalize(), vec2(0.0f, 0.0f) });
+	v.push_back({ vec3(1, 0, 0), vec3(1, 0, 0).normalize(), vec2(1.0f, 0.0f) });
+
+	return v;
+}
+
+void update_plane_vertex_buffer(const std::vector<vertex> vertices, GLuint& vertex_array)
+{
+	static GLuint vertex_buffer = 0;	// ID holder for vertex buffer
+	static GLuint index_buffer = 0;		// ID holder for index buffer
+
+	// clear and create new buffers
+	if (vertex_buffer)	glDeleteBuffers(1, &vertex_buffer);	vertex_buffer = 0;
+	if (index_buffer)	glDeleteBuffers(1, &index_buffer);	index_buffer = 0;
+
+	// check exceptions
+	if (vertices.empty()) { printf("[error] vertices is empty.\n"); return; }
+
+	// create buffers
+	std::vector<uint> indices;
+	//first roof
+	indices.push_back(0);
+	indices.push_back(1);
+	indices.push_back(3);
+
+	indices.push_back(0);
+	indices.push_back(3);
+	indices.push_back(2);
+
+	indices.push_back(3);
+	indices.push_back(1);
+	indices.push_back(0);
+
+	indices.push_back(2);
+	indices.push_back(3);
+	indices.push_back(0);
+
+	// generation of vertex buffer: use vertices as it is
+	glGenBuffers(1, &vertex_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * vertices.size(), &vertices[0], GL_STATIC_DRAW);
+
+	// geneation of index buffer
+	glGenBuffers(1, &index_buffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * indices.size(), &indices[0], GL_STATIC_DRAW);
+
+	// generate vertex array object, which is mandatory for OpenGL 3.3 and higher
+	if (vertex_array) glDeleteVertexArrays(1, &vertex_array);
+	vertex_array = cg_create_vertex_array(vertex_buffer, index_buffer);
+	if (!vertex_array) { printf("%s(): failed to create vertex aray\n", __func__); return; }
+}
+
 std::vector<vertex> create_grass_vertices() {
 	std::vector<vertex> v;
 	v.push_back({ vec3(-1, -1, 2), vec3(-1, -1, 2).normalize(), vec2(0.0f, 1.0f) });

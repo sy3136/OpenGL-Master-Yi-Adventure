@@ -120,6 +120,4 @@ void main()
 		float alpha = texture(TEXT, tc).r;
 		fragColor = text_color * vec4(1, 1, 1, alpha);
 	}
-	
-	
 }
