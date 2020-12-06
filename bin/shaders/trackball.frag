@@ -29,6 +29,7 @@ uniform sampler2D	TEXT;
 uniform vec4		text_color;
 uniform int is_text;
 uniform int is_title;
+uniform int is_help;
 
 uniform int mode;
 uniform int alphablending;
@@ -49,19 +50,19 @@ vec4 phong( vec3 l, vec3 n, vec3 h, vec4 Kd )
 	return Ira + Ird + Irs;
 }
 
-vec3 computeNormal_backup( vec2 tc, 
-                    vec3 tangent, 
+vec3 computeNormal_backup( vec2 tc,
+                    vec3 tangent,
                     vec3 binormal)
 {
 	mat3 J;
-	
+
 	vec4 cur = texture(BUMPTEX, vec2(tc.x, tc.y));
 	vec4 leftx = texture( BUMPTEX, vec2(tc.x+0.001f, tc.y) );
 	vec4 downz = texture(BUMPTEX, vec2(tc.x, tc.y+0.002f));
 	J[0][0] = 1.0;
 	J[0][1] = (cur.r - leftx.r)*7.0f;
 	J[0][2] = 0.0;
-	
+
 	J[1][0] = 0.0;
 	J[1][1] = 1.0;
 	J[1][2] = 0.0;
@@ -69,10 +70,10 @@ vec3 computeNormal_backup( vec2 tc,
 	J[2][0] = 0.0;
 	J[2][1] = (cur.r - downz.r)*7.0f;
 	J[2][2] = 1.0;
-	
+
 	vec3 u = J * tangent;
 	vec3 v = J * binormal;
-	
+
 	vec3 n = cross(v, u);
 	return normalize(n);
 }
@@ -83,14 +84,14 @@ void main()
 	vec3 normal = norm;
 	if(bump == 1) {
 		vec4 height = texture( BUMPTEX, tc );
-		vec3 tangent; 
+		vec3 tangent;
 		vec3 binormal;
 
 		float c = cos(1.57f);
 		float s = sin(1.57f);
 		tangent = vec3(c*norm_origin.x-s*norm_origin.y, s*norm_origin.x+c*norm_origin.y, 0);
 		tangent = normalize(tangent);
-	
+
 		binormal = cross(norm_origin, tangent); 
 		binormal = normalize(binormal);
 
@@ -120,4 +121,9 @@ void main()
 		float alpha = texture(TEXT, tc).r;
 		fragColor = text_color * vec4(1, 1, 1, alpha);
 	}
+	if (is_help == 1) {
+		fragColor.a = 0.08;
+	}
+
+
 }

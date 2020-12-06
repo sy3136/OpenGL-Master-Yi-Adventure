@@ -121,6 +121,7 @@ int		scene = 0;
 
 // Title
 GLuint	SRC = 0;	// texture objects
+GLuint	SRC_level = 0;	// texture objects
 GLuint  vertex_array_title = 0;	// ID holder for vertex array object
 
 // Title
@@ -130,6 +131,7 @@ GLuint  vertex_array_help = 0;	// ID holder for vertex array object
 GLuint  vertex_array_back_help = 0;	// ID holder for vertex array object
 
 static const char* image_path = "../bin/images/title4.jpg";
+static const char* image_path_level = "../bin/images/Level.jpg";
 static const char* image_path_help = "../bin/images/title2.jpg";
 static const char* image_path_help_back = "../bin/images/back.jpg";
 
@@ -141,6 +143,7 @@ static const char* mesh_obj = "../bin/mesh/Tree/CartoonTree.3ds";
 static const char* mesh_3ds = "../bin/mesh/head/head.3ds";
 //*************************************
 
+int level = 0;
 bool pause = true;
 bool reset = false;
 bool wireframe = false;
@@ -277,7 +280,7 @@ void update()
 					sound_pos = irrklang::vec3df(float(z.getPos().x), float(z.getPos().y), float(z.getPos().z));
 					sound = engine->play3D(hit_sound_path, sound_pos, false, false, false);
 					update_sound();
-					
+
 					z.knockback((z.getPos() - character.getPos()).normalize(), knock_back_scale, character.weapon.power);
 					if (z.cur_life <= 0) {
 						sound_pos = irrklang::vec3df(float(z.getPos().x), float(z.getPos().y), float(z.getPos().z));
@@ -288,7 +291,7 @@ void update()
 					for (int i = 0; i < 5; i++) {
 						particles.push_back(Particle(z.getPos() + vec3(0, 0, 2.0f), vec3(float(rand() % 11) - 5.0f, float(rand() % 11) - 5.0f, float(rand() % 5)), 1.0f, 0.1f + (rand()%3)*0.15f, blood_texture_id[rand()%3]));//(rand() % 3) * 0.1f + 0.25f));
 					}
-	
+
 					//sound_pos = irrklang::vec3df(0, 0, 0);
 					//hit_id = z.id;
 				}
@@ -313,7 +316,7 @@ void update()
 			update_sound();
 		}
 	}
-	
+
 	float hit_t = float(glfwGetTime());
 	if (hit_t - hit_time >= 0.5f)
 		hit_attack = false;
@@ -327,7 +330,7 @@ void update()
 	GLint uloc;
 	uloc = glGetUniformLocation(program, "view_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, cam.view_matrix);
 	uloc = glGetUniformLocation(program, "projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, cam.projection_matrix);
-	
+
 	//glUniform1i(glGetUniformLocation(program, "is_sword"), 1);
 	//sword.update(program, t, delta_frame);
 	//glUniform1i(glGetUniformLocation(program, "is_sword"), 0);
@@ -353,7 +356,7 @@ void render()
 		if (sound) {
 			sound->stop(); // release sound stream.
 		}
-		/* »ç¿îµå ¸ØÃß°Ô ÇÏ´Â °Íif (sound->getIsPaused()) {
+		/* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ß°ï¿½ ï¿½Ï´ï¿½ ï¿½ï¿½if (sound->getIsPaused()) {
 			sound->setIsPaused(false);
 		}*/
 		glDepthFunc(GL_LESS);
@@ -409,6 +412,15 @@ void render()
 			render_text("<Help>", -int(window_size.x * 0.2), int(window_size.y * 0.07), 1.3f, vec4(255.0f, 255.0f, 255.0f, 1.0f), dpi_scale);
 		}
 	}
+	else if (scene == 2) {
+		// Title-level
+		render_help(program, SRC_level, back_help, vertex_array_help, vertex_array_back_help, window_size);
+		float dpi_scale = cg_get_dpi_scale();
+		render_text("[Choose difficulty level]", -int(window_size.x * 0.2), int(window_size.y * 0.2), 1.6f, vec4(0.0f, 0.0f, 0.0f, 1.0f), dpi_scale);
+		render_text("[Level 1] (EASY)   Press 1", int(window_size.x * 0.1), int(window_size.y * 0.4), 1.4f, vec4(0.0f, 0.0f, 0.0f, a), dpi_scale);
+		render_text("[Level 2] (NORMAL) Press 2", int(window_size.x * 0.1), int(window_size.y * 0.6), 1.4f, vec4(0.0f, 0.0f, 0.0f, a), dpi_scale);
+		render_text("[Level 3] (HARD)   Press 3", int(window_size.x * 0.1), int(window_size.y * 0.8), 1.4f, vec4(255.0f, 0.0f, 0.0f, a), dpi_scale);
+	}
 
 	else {
 		pause = true;
@@ -426,7 +438,7 @@ void render()
 void reshape( GLFWwindow* window, int width, int height )
 {
 	// set current viewport in pixels (win_x, win_y, win_width, win_height)
-	// viewport: the window area that are affected by rendering 
+	// viewport: the window area that are affected by rendering
 	window_size = ivec2(width,height);
 	glViewport( 0, 0, width, height );
 }
@@ -444,7 +456,7 @@ void print_help()
 
 void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 {
-	if (pause) {
+	if (scene == 1 && pause) {
 		if (action == GLFW_PRESS) {
 			if (key == GLFW_KEY_F1) pause = !pause;
 		}
@@ -474,6 +486,9 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		else if (key == GLFW_KEY_D)	{ key_D = true; character.move(t, -1, 0); }
 		else if (key == GLFW_KEY_A)	{ key_A = true; character.move(t, 1, 0); }
 		else if (key == GLFW_KEY_S)	{ key_S = true; character.move(t, 0, 1); }
+		else if (key == GLFW_KEY_1) {level = 1; scene = 1; pause = false;}
+		else if (key == GLFW_KEY_2) {level = 2; scene = 1; pause = false;}
+		else if (key == GLFW_KEY_3) {level = 3; scene = 1; pause = false;}
 	}
 	else if (action == GLFW_RELEASE) {
 		if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) shift_key = false;
@@ -513,12 +528,11 @@ void mouse( GLFWwindow* window, int button, int action, int mods )
 					updateRotating = true;
 			}
 		}
-		else if (action == GLFW_RELEASE)	{ 
+		else if (action == GLFW_RELEASE)	{
 			cam.at = tb.end();
 			updateRotating = updateZooming = updatePanning = false;
 			if (scene == 0) {
-				scene = 1;
-				pause = false;
+				scene = 2;
 			}
 		}
 	}
@@ -526,7 +540,7 @@ void mouse( GLFWwindow* window, int button, int action, int mods )
 	{
 		dvec2 pos; glfwGetCursorPos(window, &pos.x, &pos.y);
 		vec2 npos = cursor_to_ndc(pos, window_size);
-		if (action == GLFW_PRESS) { 
+		if (action == GLFW_PRESS) {
 			tb.begin(cam.view_matrix, npos, cam.at);
 			updateZooming = true;
 			if (!key_attack) {
@@ -591,9 +605,47 @@ bool user_init()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glActiveTexture(GL_TEXTURE0);		// notify GL the current texture slot is 0
 
-	
+
 	// time init
 	check_frame = t = float(glfwGetTime());
+
+	// Text
+	// setup freetype
+	if (!init_text()) return false;
+
+	srand((unsigned int)time(NULL));
+	update_box_vertex_buffer(create_box_vertices(), box_vertex_array);
+	update_skybox_vertex_buffer(create_skybox_vertices(), skybox_vertex_array);
+	update_grass_vertex_buffer(create_grass_vertices(), grass_vertex_array);
+	update_plane_vertex_buffer(create_plane_vertices(), plane_vertex_array);
+
+	for (int i = 0; i < 3; i++)
+		loadTexture(blood_texture[i], blood_texture_id[i]);
+
+	for(int i = 0; i < 5000; i++)
+		grass.push_back(Grass(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), vec3(1.0f, 1.0f, (rand() % 10) / 15.0f + 0.5f)));
+	ground = Box(texture_paths[0], 100.0f, 100.0f, 1.0f, 1.0f, vec3(0,0,0));
+	character = Character(vec3(0.0f, 0.0f, 0.0f), 1.0f);
+	for (int i = 0; i < 50; i++) {
+		zombie.push_back(Zombie(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), float(rand() % 10)/10.0f + 0.5f, (rand() % 3) + 2.0f, (rand() % 3) + 2.0f, (rand() % 4) + 1));
+	}
+	skybox = Box(texture_paths[1], 1.0f, 1.0f, 1.0f, 100.0f, vec3(-100.0f, 0.0f, 0.0f), 1.0f, PI/2);
+
+	// Title
+	if (!init_title(image_path, SRC, vertex_array_title)) return false;
+
+	// Title
+	if (!init_title(image_path_level, SRC_level, vertex_array_title)) return false;
+
+	// Help
+	if (!init_help(image_path_help, image_path_help_back, SRC_help, back_help, vertex_array_help, vertex_array_back_help)) return false;
+
+	// load the mesh
+	tree_mesh = load_model(mesh_obj);
+	for (int i = 0; i < 250; i++) {
+		trees.push_back(Tree(tree_mesh, vec3(1.0f, 1.0f, 1.0f), vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 1.0f)));
+		trees[i].update();
+	}
 
 	// Sound
 	// create the engine
@@ -621,40 +673,6 @@ bool user_init()
 	listener_up.Z = -listener_up.Z;
 
 	engine->setListenerPosition(listener_pos, look_direction, listener_velocity, listener_up);
-
-	// Text
-	// setup freetype
-	if (!init_text()) return false;
-
-	srand((unsigned int)time(NULL));
-	update_box_vertex_buffer(create_box_vertices(), box_vertex_array);
-	update_skybox_vertex_buffer(create_skybox_vertices(), skybox_vertex_array);
-	update_grass_vertex_buffer(create_grass_vertices(), grass_vertex_array);
-	update_plane_vertex_buffer(create_plane_vertices(), plane_vertex_array);
-
-	for (int i = 0; i < 3; i++)
-		loadTexture(blood_texture[i], blood_texture_id[i]);
-	
-	for(int i = 0; i < 5000; i++)
-		grass.push_back(Grass(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), vec3(1.0f, 1.0f, (rand() % 10) / 15.0f + 0.5f)));
-	ground = Box(texture_paths[0], 100.0f, 100.0f, 1.0f, 1.0f, vec3(0,0,0));
-	character = Character(vec3(0.0f, 0.0f, 0.0f), 1.0f);
-	for (int i = 0; i < 50; i++) {
-		zombie.push_back(Zombie(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), float(rand() % 10)/10.0f + 0.5f, (rand() % 3) + 2.0f, (rand() % 3) + 2.0f, (rand() % 4) + 1));
-	}
-	skybox = Box(texture_paths[1], 1.0f, 1.0f, 1.0f, 50.0f, vec3(-50.0f, 0.0f, 0.0f), 1.0f, PI/2);
-
-	// load the mesh
-	tree_mesh = load_model(mesh_obj);
-	for (int i = 0; i < 250; i++) {
-		trees.push_back(Tree(tree_mesh, vec3(1.0f, 1.0f, 1.0f), vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 1.0f)));
-		trees[i].update();
-	}
-
-	// Title
-	if (!init_title(image_path, SRC, vertex_array_title)) return false;
-	// Help
-	if (!init_help(image_path_help, image_path_help_back, SRC_help, back_help, vertex_array_help, vertex_array_back_help)) return false;
 
 	return true;
 }
@@ -713,7 +731,7 @@ int main( int argc, char* argv[] )
 		}
 		is_destroy_window = true;
 	}
-	
+
 	cg_destroy_window(window);
 
 	return 0;

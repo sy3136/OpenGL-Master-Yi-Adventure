@@ -16,12 +16,14 @@ uniform mat4 sword_matrix;
 uniform mat4 view_matrix;
 uniform mat4 projection_matrix;
 uniform mat4 aspect_matrix;
+uniform mat4 help_matrix;
 
 // text
 uniform mat4 text_matrix;
 uniform int is_text;
 uniform int is_back;
 uniform int is_title;
+uniform int is_help;
 uniform int is_sword;
 
 void main()
@@ -47,6 +49,9 @@ void main()
 			gl_Position = vec4(position, 1);
 		}
 		tc = texcoord;
+		if (is_help == 1) {
+			gl_Position = aspect_matrix * help_matrix * vec4(position, 1);
+		}
 	}
 
 }

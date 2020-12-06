@@ -42,7 +42,6 @@ bool init_help(const char* image_path, const char* image_path_back, GLuint& SRC,
 	vertex_array_back_image = cg_create_vertex_array(vertex_buffer);
 	if (!vertex_array_back_image) { printf("%s(): failed to create vertex aray\n", __func__); return false; }
 
-
 	// create a src texture (Lena texture)	
 	SRC = create_texture(image_path, true); if (SRC == -1) return false;
 	back = create_texture(image_path_back, true); if (SRC == -1) return false;
@@ -52,22 +51,29 @@ bool init_help(const char* image_path, const char* image_path_back, GLuint& SRC,
 void render_help(GLuint program, GLuint SRC, GLuint back, GLuint vertex_array_image, GLuint vertex_array_back_image, ivec2 window_size) {
 	// separable Gaussian filtering
 	glUseProgram(program);
+
+	glUniform1i(glGetUniformLocation(program, "mode"), 2);
 	glUniform1i(glGetUniformLocation(program, "is_title"), 1);
 	glUniform1i(glGetUniformLocation(program, "TEX"), 0);
-
 	glUniform1i(glGetUniformLocation(program, "is_back"), 1);
+
 	glBindTexture(GL_TEXTURE_2D, back);
 	glBindVertexArray(vertex_array_back_image);
-	// render quad vertices
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-
 	glUniform1i(glGetUniformLocation(program, "is_back"), 0);
 
-	glBindTexture(GL_TEXTURE_2D, SRC);
-	// bind vertex array object
-	glBindVertexArray(vertex_array_image);
 
-	// Background
+	glBindVertexArray(vertex_array_image);
+	glUniform1i(glGetUniformLocation(program, "is_help"), 1);
+	glBindTexture(GL_TEXTURE_2D, SRC);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	GLint uloc;
+	uloc = glGetUniformLocation(program, "help_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, mat4::translate(vec3(0.02f, -0.02f, 0)));
+	glUniform1i(glGetUniformLocation(program, "is_help"), 0);
+
+	glBindTexture(GL_TEXTURE_2D, SRC);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
 
 	float aspect = window_size.x / float(window_size.y);
 
@@ -82,12 +88,7 @@ void render_help(GLuint program, GLuint SRC, GLuint back, GLuint vertex_array_im
 		0, 0, 1, 0,
 		0, 0, 0, 1
 	};
-	GLint uloc;
 	uloc = glGetUniformLocation(program, "aspect_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, aspect_matrix);
-
-	// render quad vertices
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-
 
 	glUniform1i(glGetUniformLocation(program, "is_title"), 0);
 }
