@@ -51,6 +51,7 @@ const char* blood_texture[3] = {
 	"../bin/textures/blood_texture2.bmp",
 	"../bin/textures/blood_texture3.bmp"
 };
+
 //*************************************
 // common structures
 vec3 campos = vec3(1.75f, 15, 15);
@@ -145,6 +146,7 @@ static const char* mesh_3ds = "../bin/mesh/head/head.3ds";
 
 int level = 0;
 bool pause = true;
+bool game_over = false;
 bool reset = false;
 bool wireframe = false;
 float t = 0.0f;
@@ -191,6 +193,8 @@ std::vector<Zombie> zombie;
 
 bool restart = false;
 
+char buffer[30];
+
 // Sound
 void update_sound() {
 	if (sound)
@@ -215,9 +219,18 @@ void update_sound() {
 	engine->setListenerPosition(listener_pos, look_direction, listener_velocity, listener_up);
 }
 
+void next_level(int level) {
+	character.pos = vec3(0, 0, 0);
+	zombie.clear();
+	for (int i = 0; i < 50; i++) {
+		zombie.push_back(Zombie(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), float(rand() % 10) / 10.0f + float(level)/2.0f, (rand() % 3) + 3.0f + level/2.0f, (rand() % 3) + 2.0f, (rand() % 4) + 1));
+	}
+}
+
 void update()
 {
-	if (!pause) t += delta_frame;
+	if (character.life <= 0) game_over = true;
+	if (!pause && !game_over) t += delta_frame;
 	// update projection matrix
 	cam.aspect = window_size.x/float(window_size.y);
 	cam.projection_matrix = mat4::perspective( cam.fovy, cam.aspect, cam.dnear, cam.dfar );
@@ -230,6 +243,11 @@ void update()
 		sound->setPosition(sound_pos);
 		sound->setVelocity(sound_velocity);
 	}*/
+
+	if (zombie.size() == 0) {
+		next_level(level++);
+	}
+
 
 	//Text
 	a = abs(sin(float(glfwGetTime()) * 2.5f));
@@ -307,7 +325,7 @@ void update()
 
 	for (auto& z : zombie) {
 		if (z.hit) {
-			character.life--;
+			character.life-=int(z.scale*4.0f);
 			if (character.life <= 0) {
 				character.life = 0;
 			}
@@ -394,15 +412,16 @@ void render()
 			}
 		}
 
-		if (character.life == 3)
-			render_text_3d("Life: X X X", int(window_size.x * 0.75), int(window_size.y*0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
-		else if (character.life == 2)
-			render_text_3d("Life: X X", int(window_size.x * 0.75), int(window_size.y*0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
-		else if (character.life == 1)
-			render_text_3d("Life: X", int(window_size.x * 0.75), int(window_size.y*0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
-		else
-			render_text_3d("Life:", int(window_size.x * 0.75), int(window_size.y * 0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
-
+		sprintf(buffer, "HP : %d", character.life);
+		render_text_3d(buffer, int(window_size.x * 0.75), int(window_size.y*0.9), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		sprintf(buffer, "LEVEL : %d", level);
+		render_text_3d(buffer, int(window_size.x * 0.1), int(window_size.y * 0.1), 0.85f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		if (game_over) {
+			sprintf(buffer, "GAME_OVER");
+			render_text_3d(buffer, int(window_size.x * 0.3), int(window_size.y * 0.3), 2.0f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+			sprintf(buffer, "Press R to restart");
+			render_text_3d(buffer, int(window_size.x * 0.3), int(window_size.y * 0.5), 1.0f, vec4(255.0f, 0.0f, 0.0f, 1.0f), dpi_scale, program, 1);
+		}
 		if (pause) {
 			//sound->setIsPaused(true);
 			glDepthFunc(GL_ALWAYS);
@@ -418,8 +437,8 @@ void render()
 		float dpi_scale = cg_get_dpi_scale();
 		render_text("[Choose difficulty level]", -int(window_size.x * 0.2), int(window_size.y * 0.2), 1.6f, vec4(0.0f, 0.0f, 0.0f, 1.0f), dpi_scale);
 		render_text("[Level 1] (EASY)   Press 1", int(window_size.x * 0.1), int(window_size.y * 0.4), 1.4f, vec4(0.0f, 0.0f, 0.0f, a), dpi_scale);
-		render_text("[Level 2] (NORMAL) Press 2", int(window_size.x * 0.1), int(window_size.y * 0.6), 1.4f, vec4(0.0f, 0.0f, 0.0f, a), dpi_scale);
-		render_text("[Level 3] (HARD)   Press 3", int(window_size.x * 0.1), int(window_size.y * 0.8), 1.4f, vec4(255.0f, 0.0f, 0.0f, a), dpi_scale);
+		render_text("[Level 3] (NORMAL) Press 2", int(window_size.x * 0.1), int(window_size.y * 0.6), 1.4f, vec4(0.0f, 0.0f, 0.0f, a), dpi_scale);
+		render_text("[Level 5] (HARD)   Press 3", int(window_size.x * 0.1), int(window_size.y * 0.8), 1.4f, vec4(255.0f, 0.0f, 0.0f, a), dpi_scale);
 	}
 
 	else {
@@ -456,9 +475,18 @@ void print_help()
 
 void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 {
-	if (scene == 1 && pause) {
+	if (scene == 1 && (pause || game_over)) {
 		if (action == GLFW_PRESS) {
 			if (key == GLFW_KEY_F1) pause = !pause;
+			else if (key == GLFW_KEY_R) {
+				game_over = false;
+				restart = true;
+				zombie.clear();
+				grass.clear();
+				trees.clear();
+
+				scene = 0;
+			}
 		}
 		return;
 	}
@@ -469,6 +497,7 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		else if (key == GLFW_KEY_HOME)				cam = camera();
 		else if (key == GLFW_KEY_F1)				pause = !pause;
 		else if (key == GLFW_KEY_R) {
+			game_over = false;
 			restart = true;
 			zombie.clear();
 			grass.clear();
@@ -486,9 +515,12 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		else if (key == GLFW_KEY_D)	{ key_D = true; character.move(t, -1, 0); }
 		else if (key == GLFW_KEY_A)	{ key_A = true; character.move(t, 1, 0); }
 		else if (key == GLFW_KEY_S)	{ key_S = true; character.move(t, 0, 1); }
-		else if (key == GLFW_KEY_1) {level = 1; scene = 1; pause = false;}
-		else if (key == GLFW_KEY_2) {level = 2; scene = 1; pause = false;}
-		else if (key == GLFW_KEY_3) {level = 3; scene = 1; pause = false;}
+		else if (key == GLFW_KEY_1 && scene == 2) {level = 1; scene = 1; pause = false;}
+		else if (key == GLFW_KEY_2 && scene == 2) {level = 3; scene = 1; pause = false;}
+		else if (key == GLFW_KEY_3 && scene == 2) {level = 5; scene = 1; pause = false;}
+		if (scene == 2 && (key == GLFW_KEY_1 || key == GLFW_KEY_2 || key == GLFW_KEY_3)) {
+			next_level(level);
+		}
 	}
 	else if (action == GLFW_RELEASE) {
 		if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) shift_key = false;
@@ -505,7 +537,7 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 
 void mouse( GLFWwindow* window, int button, int action, int mods )
 {
-	if (scene == 1 && pause) {
+	if (scene == 1 && (pause || game_over)) {
 		return;
 	}
 	if(button==GLFW_MOUSE_BUTTON_LEFT)
@@ -590,6 +622,7 @@ void motion(GLFWwindow* window, double x, double y)
 	}
 }
 
+
 bool user_init()
 {
 	// log hotkeys
@@ -626,10 +659,8 @@ bool user_init()
 		grass.push_back(Grass(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), vec3(1.0f, 1.0f, (rand() % 10) / 15.0f + 0.5f)));
 	ground = Box(texture_paths[0], 100.0f, 100.0f, 1.0f, 1.0f, vec3(0,0,0));
 	character = Character(vec3(0.0f, 0.0f, 0.0f), 1.0f);
-	for (int i = 0; i < 50; i++) {
-		zombie.push_back(Zombie(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), float(rand() % 10)/10.0f + 0.5f, (rand() % 3) + 2.0f, (rand() % 3) + 2.0f, (rand() % 4) + 1));
-	}
-	skybox = Box(texture_paths[1], 1.0f, 1.0f, 1.0f, 100.0f, vec3(-100.0f, 0.0f, 0.0f), 1.0f, PI/2);
+	
+	skybox = Box(texture_paths[1], 1.0f, 1.0f, 1.0f, 50.0f, vec3(-50.0f, 0.0f, 0.0f), 1.0f, PI/2);
 
 	// Title
 	if (!init_title(image_path, SRC, vertex_array_title)) return false;
@@ -643,7 +674,10 @@ bool user_init()
 	// load the mesh
 	tree_mesh = load_model(mesh_obj);
 	for (int i = 0; i < 250; i++) {
-		trees.push_back(Tree(tree_mesh, vec3(1.0f, 1.0f, 1.0f), vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 1.0f)));
+		vec3 tree_pos = vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 1.0f);
+		while (tree_pos.length() < 5.0f)
+			tree_pos = vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 1.0f);
+		trees.push_back(Tree(tree_mesh, vec3(1.0f, 1.0f, 1.0f), tree_pos));
 		trees[i].update();
 	}
 
@@ -712,7 +746,7 @@ int main( int argc, char* argv[] )
 		{
 			while (float(glfwGetTime()) - check_frame <= 0.016f);
 			delta_frame = float(glfwGetTime()) - check_frame;
-			if (pause) delta_frame = 0.0f;
+			if (pause || game_over) delta_frame = 0.0f;
 			check_frame = float(glfwGetTime());
 
 			glfwPollEvents();	// polling and processing of events

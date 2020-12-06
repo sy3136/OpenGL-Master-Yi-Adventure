@@ -2,8 +2,8 @@
 #ifndef __CHARACTER__
 #define __CHARACTER__
 
-//static const char* sword_obj = "../bin/mesh/Roma_Sword1_01.obj";
-static const char* sword_obj = "../bin/mesh/Axe.obj";
+static const char* sword_obj = "../bin/mesh/Roma_Sword1_01.obj";
+//static const char* sword_obj = "../bin/mesh/Axe.obj";
 
 const char* character_texture[5] = {
 	"../bin/textures/ch_head.bmp",
@@ -35,6 +35,7 @@ public:
 		this->accel_scale = 0.5f;
 		x_moving = y_moving = false;
 		speed_theta = 0;
+		life = 100;
 	}
 	Box arm1, arm2, leg1, leg2, body, head;
 
@@ -47,7 +48,7 @@ public:
 	vec2 speed;
 	float speed_theta;
 	float weapon_speed;
-	int life = 3;
+	int life;
 
 	bool is_dead = false;
 	bool x_moving, y_moving;
