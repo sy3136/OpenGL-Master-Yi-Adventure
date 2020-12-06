@@ -29,6 +29,7 @@ uniform sampler2D	TEXT;
 uniform vec4		text_color;
 uniform int is_text;
 uniform int is_title;
+uniform int is_help;
 
 uniform int mode;
 uniform int alphablending;
@@ -119,6 +120,9 @@ void main()
 	if (is_text == 1) {
 		float alpha = texture(TEXT, tc).r;
 		fragColor = text_color * vec4(1, 1, 1, alpha);
+	}
+	if (is_help == 1) {
+		fragColor.a = 0.08;
 	}
 	
 	
