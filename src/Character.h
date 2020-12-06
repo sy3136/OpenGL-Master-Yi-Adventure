@@ -8,8 +8,8 @@ static const char* sword_obj = "../bin/mesh/Roma_Sword1_01.obj";
 const char* character_texture[5] = {
 	"../bin/textures/ch_head.bmp",
 	"../bin/textures/ch_body.bmp",
-	"../bin/textures/ch_body.bmp",
-	"../bin/textures/ch_body.bmp",
+	"../bin/textures/ch_arm.bmp",
+	"../bin/textures/ch_leg.bmp",
 	"../bin/textures/sword.bmp"
 };
 class Character

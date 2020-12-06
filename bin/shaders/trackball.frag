@@ -45,7 +45,7 @@ uniform int is_sword;
 vec4 phong( vec3 l, vec3 n, vec3 h, vec4 Kd )
 {
 	vec4 Ira = Ka*Ia;									// ambient reflection
-	vec4 Ird = max(Kd*dot(l,n)*Id,Kd * 0.3);					// diffuse reflection
+	vec4 Ird = max(Kd*dot(l,n)*Id,Kd * 0.1);					// diffuse reflection
 	vec4 Irs = max(Ks*pow(dot(h,n),shininess)*Is,0.0);	// specular reflection
 	return Ira + Ird + Irs;
 }

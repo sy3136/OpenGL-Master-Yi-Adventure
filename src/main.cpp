@@ -223,7 +223,7 @@ void next_level(int level) {
 	character.pos = vec3(0, 0, 0);
 	zombie.clear();
 	for (int i = 0; i < 50; i++) {
-		zombie.push_back(Zombie(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), float(rand() % 10) / 10.0f + float(level)/2.0f, (rand() % 3) + 3.0f + level/2.0f, (rand() % 3) + 2.0f, (rand() % 4) + 1));
+		zombie.push_back(Zombie(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), float(rand() % 11) / 10.0f + (float(level)/2.0f), (rand() % 3) + 3.0f + level/2.0f, (rand() % 3) + 2.0f, (rand() % 4) + 1));
 	}
 }
 
