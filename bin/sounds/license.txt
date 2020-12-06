@@ -4,11 +4,6 @@ ophelia.mp3 - ophelias symphony, by Tomas PhUsIoN 2006
               see http://ccmixter.org/media/files/phusion/6442
               license: Creative Commons Attribution 2.5 (see below)
 
-getout.mp3 - never get out, by tone_group 2007
-	     license: Creative Commons Attribution 2.5 (see below)
-	     http://ccmixter.org/media/files/seb_grenning/8920
-	     license: Creative Commons Attribution 2.5 (see below)
-
 punch.wav -
 	http://soundbible.com/1418-Sharp-Punch.html
 	license: Creative Commons Sampling Plus 1.0

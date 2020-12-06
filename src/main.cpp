@@ -146,6 +146,7 @@ static const char* mesh_3ds = "../bin/mesh/head/head.3ds";
 
 int level = 0;
 bool pause = true;
+bool stop = false;
 bool game_over = false;
 bool reset = false;
 bool wireframe = false;
@@ -223,14 +224,14 @@ void next_level(int level) {
 	character.pos = vec3(0, 0, 0);
 	zombie.clear();
 	for (int i = 0; i < 50; i++) {
-		zombie.push_back(Zombie(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), float(rand() % 11) / 10.0f + (float(level)/2.0f), (rand() % 3) + 3.0f + level/2.0f, (rand() % 3) + 2.0f, (rand() % 4) + 1));
+		zombie.push_back(Zombie(vec3(float((rand() % 100) - 50), float((rand() % 100) - 50), 0.0f), float(rand() % 6) / 10.0f + (float(level)/4.0f), (rand() % 3) + 3.0f + level/4.0f, (rand() % 3) + 2.0f, (rand() % 4) + 1));
 	}
 }
 
 void update()
 {
 	if (character.life <= 0) game_over = true;
-	if (!pause && !game_over) t += delta_frame;
+	if (!pause && !game_over && !stop) t += delta_frame;
 	// update projection matrix
 	cam.aspect = window_size.x/float(window_size.y);
 	cam.projection_matrix = mat4::perspective( cam.fovy, cam.aspect, cam.dnear, cam.dfar );
@@ -244,7 +245,7 @@ void update()
 		sound->setVelocity(sound_velocity);
 	}*/
 
-	if (zombie.size() == 0) {
+	if (scene == 1 && zombie.size() == 0) {
 		next_level(level++);
 	}
 
@@ -467,7 +468,7 @@ void print_help()
 	printf( "[help]\n" );
 	printf( "- press ESC or 'q' to terminate the program\n" );
 	printf( "- press F1 to see help in game\n" );
-	printf( "- press Home to reset camera\n" );
+	printf( "- press Home to pause game\n" );
 	printf( "- press R to reset \n");
 
 	printf( "\n" );
@@ -493,8 +494,7 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 	if(action==GLFW_PRESS)
 	{
 		if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q)	glfwSetWindowShouldClose(window, GL_TRUE);
-		else if (key == GLFW_KEY_H)					print_help();
-		else if (key == GLFW_KEY_HOME)				cam = camera();
+		else if (key == GLFW_KEY_HOME)				stop = !stop;
 		else if (key == GLFW_KEY_F1)				pause = !pause;
 		else if (key == GLFW_KEY_R) {
 			game_over = false;
@@ -509,23 +509,20 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 			wireframe = !wireframe;
 			glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
 		}
-		else if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) shift_key = true;
-		else if (key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_RIGHT_CONTROL) control_key = true;
 		else if (key == GLFW_KEY_W) { key_W = true; character.move(t, 0, -1); }
 		else if (key == GLFW_KEY_D)	{ key_D = true; character.move(t, -1, 0); }
 		else if (key == GLFW_KEY_A)	{ key_A = true; character.move(t, 1, 0); }
 		else if (key == GLFW_KEY_S)	{ key_S = true; character.move(t, 0, 1); }
-		else if (key == GLFW_KEY_1 && scene == 2) {level = 1; scene = 1; pause = false;}
-		else if (key == GLFW_KEY_2 && scene == 2) {level = 3; scene = 1; pause = false;}
-		else if (key == GLFW_KEY_3 && scene == 2) {level = 5; scene = 1; pause = false;}
+		else if (key == GLFW_KEY_1 && scene == 2) {level = 1; pause = false;}
+		else if (key == GLFW_KEY_2 && scene == 2) {level = 3; pause = false;}
+		else if (key == GLFW_KEY_3 && scene == 2) {level = 5; pause = false;}
 		if (scene == 2 && (key == GLFW_KEY_1 || key == GLFW_KEY_2 || key == GLFW_KEY_3)) {
 			next_level(level);
+			scene = 1;
 		}
 	}
 	else if (action == GLFW_RELEASE) {
-		if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) shift_key = false;
-		else if (key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_RIGHT_CONTROL) control_key = false;
-		else if (key == GLFW_KEY_W) { key_W = false; character.stop(0, -1); }
+		if (key == GLFW_KEY_W) { key_W = false; character.stop(0, -1); }
 		else if (key == GLFW_KEY_D) { key_D = false; character.stop(-1, 0); }
 		else if (key == GLFW_KEY_A) { key_A = false; character.stop(1, 0); }
 		else if (key == GLFW_KEY_S) { key_S = false; character.stop(0, 1); }
@@ -542,27 +539,15 @@ void mouse( GLFWwindow* window, int button, int action, int mods )
 	}
 	if(button==GLFW_MOUSE_BUTTON_LEFT)
 	{
-		dvec2 pos; glfwGetCursorPos(window,&pos.x,&pos.y);
-		//printf("> Left mouse button pressed at (%d, %d)\n", int(pos.x), int(pos.y));
-		vec2 npos = cursor_to_ndc( pos, window_size );
 		if (action == GLFW_PRESS)			{
 			if (scene == 1) {
-				tb.begin(cam.view_matrix, npos, cam.at);
 				if (!key_attack) {
 					key_attack = true;
 					if (!character.isAttacking(t)) knock_back_scale = 2.0f;
 				}
-				if (control_key)
-					updatePanning = true;
-				else if (shift_key)
-					updateZooming = true;
-				else
-					updateRotating = true;
 			}
 		}
 		else if (action == GLFW_RELEASE)	{
-			cam.at = tb.end();
-			updateRotating = updateZooming = updatePanning = false;
 			if (scene == 0) {
 				scene = 2;
 			}
@@ -570,29 +555,11 @@ void mouse( GLFWwindow* window, int button, int action, int mods )
 	}
 	else if (button == GLFW_MOUSE_BUTTON_RIGHT)
 	{
-		dvec2 pos; glfwGetCursorPos(window, &pos.x, &pos.y);
-		vec2 npos = cursor_to_ndc(pos, window_size);
 		if (action == GLFW_PRESS) {
-			tb.begin(cam.view_matrix, npos, cam.at);
-			updateZooming = true;
 			if (!key_attack) {
 				key_attack = true;
 				if (!character.isAttacking(t)) knock_back_scale = 5.0f;
 			}
-		}
-		else if (action == GLFW_RELEASE) {
-			tb.end();
-			updateZooming = false;
-		}
-	}
-	else if (button == GLFW_MOUSE_BUTTON_MIDDLE)
-	{
-		dvec2 pos; glfwGetCursorPos(window, &pos.x, &pos.y);
-		vec2 npos = cursor_to_ndc(pos, window_size);
-		if (action == GLFW_PRESS) { tb.begin(cam.view_matrix, npos, cam.at);	updatePanning = true; }
-		else if (action == GLFW_RELEASE) {
-			cam.at = tb.end();
-			updatePanning = false;
 		}
 	}
 }
@@ -601,25 +568,6 @@ void mouse( GLFWwindow* window, int button, int action, int mods )
 
 void motion(GLFWwindow* window, double x, double y)
 {
-	if (!tb.is_tracking()) return;
-	vec2 npos = cursor_to_ndc(dvec2(x, y), window_size);
-
-	if (updateRotating) {
-		cam.view_matrix = tb.updateRotate(npos);
-		cam.eye = get_eye_from_view(cam.view_matrix);
-		cam.up = get_up_from_view(cam.view_matrix);
-	}
-	else if (updateZooming) {
-		cam.view_matrix = tb.updateZoom(npos);
-		cam.eye = get_eye_from_view(cam.view_matrix);
-		cam.up = get_up_from_view(cam.view_matrix);
-	}
-	else if (updatePanning) {
-		cam.view_matrix = tb.updatePan(npos);
-		cam.eye = get_eye_from_view(cam.view_matrix);
-		cam.at = tb.updateAt(npos);
-		cam.up = get_up_from_view(cam.view_matrix);
-	}
 }
 
 
@@ -746,7 +694,7 @@ int main( int argc, char* argv[] )
 		{
 			while (float(glfwGetTime()) - check_frame <= 0.016f);
 			delta_frame = float(glfwGetTime()) - check_frame;
-			if (pause || game_over) delta_frame = 0.0f;
+			if (pause || game_over || stop) delta_frame = 0.0f;
 			check_frame = float(glfwGetTime());
 
 			glfwPollEvents();	// polling and processing of events
