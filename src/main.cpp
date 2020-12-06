@@ -135,7 +135,7 @@ static const char* mesh_obj = "../bin/mesh/Tree/CartoonTree.3ds";
 static const char* mesh_3ds = "../bin/mesh/head/head.3ds";
 //*************************************
 
-bool pause = false;
+bool pause = true;
 bool reset = false;
 bool wireframe = false;
 float t = 0.0f;
@@ -176,7 +176,6 @@ Character character;
 bool character_attack = false;
 //Zombie zombie;
 std::vector<Zombie> zombie;
-int num_zombie = 3;
 
 bool restart = false;
 
@@ -206,7 +205,6 @@ void update_sound() {
 
 void update()
 {
-	
 	if (!pause) t += delta_frame;
 	// update projection matrix
 	cam.aspect = window_size.x/float(window_size.y);
@@ -326,7 +324,6 @@ void render()
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	if (scene == 1) {
-
 		// Sound
 		if (sound) {
 			sound->stop(); // release sound stream.
@@ -386,6 +383,7 @@ void render()
 	}
 
 	else {
+		pause = true;
 		glDepthFunc(GL_ALWAYS);
 		// Title
 		render_title(program, SRC, vertex_array_title, window_size);
@@ -464,7 +462,7 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 
 void mouse( GLFWwindow* window, int button, int action, int mods )
 {
-	if (pause) {
+	if (scene == 1 && pause) {
 		return;
 	}
 	if(button==GLFW_MOUSE_BUTTON_LEFT)
@@ -490,8 +488,10 @@ void mouse( GLFWwindow* window, int button, int action, int mods )
 		else if (action == GLFW_RELEASE)	{ 
 			cam.at = tb.end();
 			updateRotating = updateZooming = updatePanning = false;
-			if(scene == 0)
+			if (scene == 0) {
 				scene = 1;
+				pause = false;
+			}
 		}
 	}
 	else if (button == GLFW_MOUSE_BUTTON_RIGHT)
@@ -665,7 +665,6 @@ int main( int argc, char* argv[] )
 			if (pause) delta_frame = 0.0f;
 			check_frame = float(glfwGetTime());
 
-			printf("%d", program);
 			glfwPollEvents();	// polling and processing of events
 			if (restart == true) {
 				restart = false;
